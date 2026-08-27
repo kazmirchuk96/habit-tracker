@@ -53,18 +53,23 @@
 #habit-tracker-root .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--text-secondary); transition: left 0.15s, background 0.15s; }
 #habit-tracker-root .toggle-track.on .toggle-thumb { left: 16px; background: #0F0E0A; }
 
-#habit-tracker-root .roulette-stage { margin: 6px 0 16px; }
-#habit-tracker-root .roulette-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 3px; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
-#habit-tracker-root .roulette-list::-webkit-scrollbar { width: 6px; }
-#habit-tracker-root .roulette-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
-#habit-tracker-root .roulette-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface-1); border-radius: 10px; font-size: 13px; border: 1px solid transparent; transition: background 0.12s, border-color 0.12s, color 0.12s, opacity 0.2s; scroll-margin: 120px; }
+#habit-tracker-root .reel-box { position: relative; height: 64px; border-radius: 14px; background: var(--surface-1); border: 0.5px solid var(--border); margin-bottom: 4px; overflow: hidden; }
+#habit-tracker-root .reel-idle { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; font-size: 13.5px; color: var(--text-muted); text-align: center; }
+#habit-tracker-root .reel-idle .roulette-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+#habit-tracker-root .reel-idle.win { color: var(--text-primary); font-weight: 600; }
+#habit-tracker-root .reel-idle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#habit-tracker-root .reel-anim { position: absolute; inset: 0; }
+#habit-tracker-root .reel-track { position: absolute; top: 0; left: 0; height: 100%; display: flex; align-items: center; will-change: transform; }
+#habit-tracker-root .reel-chip { flex: 0 0 auto; width: var(--chip-w, 220px); display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; font-size: 13.5px; color: var(--text-muted); text-align: center; white-space: nowrap; overflow: hidden; box-sizing: border-box; }
+#habit-tracker-root .reel-chip .roulette-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+#habit-tracker-root .reel-chip span:last-child { overflow: hidden; text-overflow: ellipsis; }
+#habit-tracker-root .reel-chip.win { color: var(--text-primary); font-weight: 600; }
+#habit-tracker-root .reel-window { position: absolute; top: 4px; bottom: 4px; left: 50%; width: var(--chip-w, 220px); transform: translateX(-50%); border: 1.5px solid var(--border-strong); border-radius: 10px; pointer-events: none; }
+#habit-tracker-root .reel-fade { position: absolute; top: 0; bottom: 0; width: 60px; pointer-events: none; }
+#habit-tracker-root .reel-fade.left { left: 0; background: linear-gradient(90deg, var(--surface-1), transparent); }
+#habit-tracker-root .reel-fade.right { right: 0; background: linear-gradient(270deg, var(--surface-1), transparent); }
 #habit-tracker-root .roulette-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-#habit-tracker-root .roulette-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
-#habit-tracker-root .roulette-row.active { background: rgba(47,190,147,0.16); border-color: #2FBE93; }
-#habit-tracker-root .roulette-row.active .roulette-text { color: var(--text-primary); font-weight: 600; }
-#habit-tracker-root .roulette-row.trail1 { background: rgba(47,190,147,0.08); }
-#habit-tracker-root .roulette-row.trail2 { background: rgba(47,190,147,0.04); }
-#habit-tracker-root .roulette-empty { padding: 2rem 1rem; }
+#habit-tracker-root .reel-box .roulette-empty { display: flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; font-size: 12.5px; }
 #habit-tracker-root .spin-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; margin-top: 4px; background: linear-gradient(135deg, #2FBE93, #1D9E75); color: #0F0E0A; font-weight: 600; font-size: 14.5px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; font-family: inherit; }
 #habit-tracker-root .spin-btn:hover:not(:disabled) { transform: translateY(-1px); }
 #habit-tracker-root .spin-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
@@ -116,7 +121,7 @@
   #habit-tracker-root #ht-overview-cards { grid-template-columns: 1fr 1fr !important; }
   #habit-tracker-root .card { padding: 1rem; }
   #habit-tracker-root .hero-card { padding: 1.1rem 1.2rem; }
-  #habit-tracker-root .roulette-list { max-height: 260px; }
+  #habit-tracker-root .reel-box { height: 58px; }
   #habit-tracker-root .habit-top-row { flex-direction: column; }
   #habit-tracker-root .habit-actions { align-self: flex-end; }
 }
@@ -156,7 +161,7 @@
   <div id="ht-overview-cards" style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:1.5rem;"></div>
 
   <div class="hero-card" style="margin-bottom:1.5rem;">
-    <div class="section-label" style="margin-bottom:10px;">🎲 Рулетка звичок</div>
+    <div class="section-label" style="margin-bottom:10px;">🎰 Барабан звичок</div>
     <div class="wheel-controls-row">
       <span id="ht-wheel-count-label">—</span>
       <label class="toggle-switch" id="ht-hide-done-toggle">
@@ -164,11 +169,17 @@
         <span>приховати виконані сьогодні</span>
       </label>
     </div>
-    <div class="roulette-stage">
-      <div class="roulette-list" id="ht-roulette-list"></div>
-      <div class="empty-state roulette-empty" id="ht-wheel-empty" style="display:none;">Немає звичок у рулетці — додай звичку нижче або увімкни якусь у списку.</div>
+    <div class="reel-box" id="ht-reel-box">
+      <div class="reel-idle" id="ht-reel-idle"><span class="reel-idle-text" id="ht-reel-idle-text">Крути барабан, щоб обрати звичку</span></div>
+      <div class="reel-anim" id="ht-reel-anim" style="display:none;">
+        <div class="reel-track" id="ht-reel-track"></div>
+        <div class="reel-window"></div>
+        <div class="reel-fade left"></div>
+        <div class="reel-fade right"></div>
+      </div>
+      <div class="empty-state roulette-empty" id="ht-wheel-empty" style="display:none; position:absolute; inset:0; padding:0 1rem;"></div>
     </div>
-    <button type="button" class="spin-btn" id="ht-spin-btn">🎲 Крутити рулетку</button>
+    <button type="button" class="spin-btn" id="ht-spin-btn">🎰 Крутити барабан</button>
     <div id="ht-wheel-result"></div>
 
     <div class="queue-section">
@@ -396,51 +407,44 @@
       ocard('Виконань за 7 днів', String(last7));
   }
 
-  // --- Roulette list (replaces the circular wheel) ---
+  // --- Slot reel (replaces the circular wheel) ---
   function getWheelCandidates(){
     return habits.filter(h => h.wheel !== false && !(hideDoneToday && isDoneToday(h.id)));
   }
   function prefersReducedMotion(){
     try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; }
   }
-  function renderRouletteList(){
+  function reelChipInner(h, extraClass){
+    return '<span class="roulette-dot" style="background:' + colorFor(h.id) + '"></span><span>' + escapeHtml(h.text) + '</span>';
+  }
+  function renderReelIdle(){
     if (isSpinning) return;
     const candidates = getWheelCandidates();
     window._htCandidates = candidates;
     const label = document.getElementById('ht-wheel-count-label');
-    if (label) label.textContent = candidates.length + ' ' + pluralUk(candidates.length, 'звичка', 'звички', 'звичок') + ' у рулетці';
-    const list = document.getElementById('ht-roulette-list');
+    if (label) label.textContent = candidates.length + ' ' + pluralUk(candidates.length, 'звичка', 'звички', 'звичок') + ' у барабані';
+    const box = document.getElementById('ht-reel-box');
+    const idleEl = document.getElementById('ht-reel-idle');
+    const idleText = document.getElementById('ht-reel-idle-text');
     const empty = document.getElementById('ht-wheel-empty');
     const spinBtn = document.getElementById('ht-spin-btn');
-    if (!list) return;
+    if (!box) return;
     if (!candidates.length){
-      list.innerHTML = '';
-      list.style.display = 'none';
-      if (empty) empty.style.display = 'flex';
+      idleEl.style.display = 'none';
+      if (empty){ empty.style.display = 'flex'; empty.textContent = 'Немає звичок у барабані — додай звичку нижче або увімкни якусь у списку.'; }
       if (spinBtn) spinBtn.disabled = true;
       return;
     }
-    list.style.display = 'flex';
     if (empty) empty.style.display = 'none';
     if (spinBtn) spinBtn.disabled = false;
-    list.innerHTML = candidates.map((h, i) =>
-      '<div class="roulette-row' + (h.id === lastPickedId ? ' active' : '') + '" data-idx="' + i + '" data-id="' + h.id + '"><span class="roulette-dot" style="background:' + colorFor(h.id) + '"></span><span class="roulette-text">' + escapeHtml(h.text) + '</span></div>'
-    ).join('');
-    if (lastPickedId){
-      const picked = list.querySelector('.roulette-row.active');
-      if (picked) picked.scrollIntoView({ block: 'center', behavior: 'auto' });
+    idleEl.style.display = 'flex';
+    const picked = lastPickedId ? candidates.find(h => h.id === lastPickedId) : null;
+    idleEl.classList.toggle('win', !!picked);
+    if (picked){
+      idleText.innerHTML = reelChipInner(picked);
+    } else {
+      idleText.textContent = 'Крути барабан, щоб обрати звичку';
     }
-  }
-  function setRouletteHighlight(idx){
-    const rows = document.querySelectorAll('#ht-roulette-list .roulette-row');
-    rows.forEach((row, i) => {
-      row.classList.remove('active', 'trail1', 'trail2');
-      if (i === idx) row.classList.add('active');
-      else if (i === idx - 1) row.classList.add('trail1');
-      else if (i === idx - 2) row.classList.add('trail2');
-    });
-    const active = rows[idx];
-    if (active) active.scrollIntoView({ block: 'center', behavior: 'auto' });
   }
 
   function spin(){
@@ -454,33 +458,52 @@
     lastPickedId = null;
 
     if (prefersReducedMotion()){
-      setRouletteHighlight(winIdx);
       isSpinning = false;
       showWheelResult(candidates[winIdx]);
       if (spinBtn) spinBtn.disabled = false;
       return;
     }
 
-    // Fixed step count regardless of list size, so a 5-habit and a 40-habit
-    // list both take roughly the same ~3-4s to settle. Walking the sequence
-    // backward from winIdx guarantees the very last step lands on it exactly.
-    const totalSteps = 22 + Math.floor(Math.random() * 8);
-    let step = 0;
-    function tick(){
-      const idx = ((winIdx - (totalSteps - 1 - step)) % n + n) % n;
-      setRouletteHighlight(idx);
-      step++;
-      if (step >= totalSteps){
-        isSpinning = false;
-        showWheelResult(candidates[winIdx]);
-        if (spinBtn) spinBtn.disabled = false;
-        return;
-      }
-      const progress = step / totalSteps;
-      const delay = 45 + Math.pow(progress, 2.2) * 260;
-      setTimeout(tick, delay);
+    const box = document.getElementById('ht-reel-box');
+    const idleEl = document.getElementById('ht-reel-idle');
+    const animEl = document.getElementById('ht-reel-anim');
+    const track = document.getElementById('ht-reel-track');
+    idleEl.style.display = 'none';
+    animEl.style.display = 'block';
+
+    const viewportW = box.clientWidth || 320;
+    const chipW = Math.max(150, Math.min(Math.round(viewportW * 0.62), 240));
+    box.style.setProperty('--chip-w', chipW + 'px');
+
+    // Fixed number of passes through the list regardless of its length, so a
+    // 5-habit and a 40-habit reel both take roughly the same ~3.5s to settle.
+    const loops = 6;
+    const totalChips = loops * n + winIdx + 1; // last chip is always the winner
+    let html = '';
+    for (let i = 0; i < totalChips; i++){
+      const h = candidates[i % n];
+      const isLast = i === totalChips - 1;
+      html += '<div class="reel-chip' + (isLast ? ' win' : '') + '">' + reelChipInner(h) + '</div>';
     }
-    tick();
+    track.innerHTML = html;
+    track.style.transition = 'none';
+    track.style.transform = 'translateX(0px)';
+    void track.offsetWidth; // force reflow so the next transform change animates
+    const targetCenter = (totalChips - 1) * chipW + chipW / 2;
+    const translateX = Math.round(viewportW / 2 - targetCenter);
+    const DURATION = 4600;
+    requestAnimationFrame(() => {
+      track.style.transition = 'transform ' + DURATION + 'ms cubic-bezier(0.1,0.62,0.13,1)';
+      track.style.transform = 'translateX(' + translateX + 'px)';
+    });
+
+    setTimeout(function(){
+      isSpinning = false;
+      animEl.style.display = 'none';
+      idleEl.style.display = 'flex';
+      showWheelResult(candidates[winIdx]);
+      if (spinBtn) spinBtn.disabled = false;
+    }, DURATION + 60);
   }
 
   function showWheelResult(h){
@@ -677,7 +700,7 @@
   function render(){
     try {
       renderOverview();
-      renderRouletteList();
+      renderReelIdle();
       renderQueue();
       renderHabitsList();
     } catch(err){
@@ -714,7 +737,7 @@
   if ($('ht-hide-done-toggle')) $('ht-hide-done-toggle').onclick = () => {
     hideDoneToday = !hideDoneToday;
     if ($('ht-hide-done-track')) $('ht-hide-done-track').classList.toggle('on', hideDoneToday);
-    renderRouletteList();
+    renderReelIdle();
   };
   if ($('ht-spin-btn')) $('ht-spin-btn').onclick = spin;
   if ($('ht-clear-queue-btn')) $('ht-clear-queue-btn').onclick = () => { wheelQueue = []; persist(); render(); };
