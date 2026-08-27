@@ -1,0 +1,695 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap');
+#habit-tracker-root {
+  --surface-0: #0F0E0A;
+  --surface-1: #1C1B15;
+  --surface-2: #221F19;
+  --border: #34322B;
+  --border-strong: #4A473C;
+  --text-primary: #F3F1E8;
+  --text-secondary: #B7B4A6;
+  --text-muted: #8C8977;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--text-primary);
+  max-width: 720px;
+  position: relative;
+  background: var(--surface-0);
+  padding: 1.5rem;
+  border-radius: 20px;
+}
+#habit-tracker-root h1 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.01em; }
+#habit-tracker-root .section-label { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; margin-bottom: 12px; }
+#habit-tracker-root .card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 20px; padding: 1.25rem 1.4rem; }
+#habit-tracker-root .hero-num { font-family: 'Fraunces', serif; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+#habit-tracker-root .hero-card { border-radius: 22px; padding: 1.5rem 1.6rem; background: var(--surface-2); border: 1px solid var(--border-strong); }
+#habit-tracker-root .icon-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; flex-shrink: 0; }
+#habit-tracker-root .icon-btn:hover { background: var(--surface-0); color: var(--text-primary); }
+#habit-tracker-root .menu-wrap { position: relative; }
+#habit-tracker-root .menu-btn { width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid var(--border); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#habit-tracker-root .menu-btn:hover { background: var(--surface-1); }
+#habit-tracker-root .menu-panel { position: absolute; right: 0; top: 40px; background: var(--surface-2); border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 8px; min-width: 230px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); z-index: 20; display: none; }
+#habit-tracker-root .menu-panel.open { display: block; }
+#habit-tracker-root .menu-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 13px; border-radius: 8px; cursor: pointer; color: var(--text-primary); background: none; border: none; width: 100%; text-align: left; font-family: inherit; }
+#habit-tracker-root .menu-item:hover { background: var(--surface-1); }
+#habit-tracker-root .menu-item.danger { color: #F0937A; }
+#habit-tracker-root .save-status { font-size: 11px; color: var(--text-muted); }
+
+#habit-tracker-root .wheel-controls-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; flex-wrap: wrap; gap: 8px; }
+#habit-tracker-root .toggle-switch { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+#habit-tracker-root .toggle-track { width: 32px; height: 18px; border-radius: 999px; background: var(--surface-1); border: 0.5px solid var(--border-strong); position: relative; transition: background 0.15s; flex-shrink: 0; }
+#habit-tracker-root .toggle-track.on { background: #2FBE93; border-color: #2FBE93; }
+#habit-tracker-root .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--text-secondary); transition: left 0.15s, background 0.15s; }
+#habit-tracker-root .toggle-track.on .toggle-thumb { left: 16px; background: #0F0E0A; }
+
+#habit-tracker-root .wheel-stage { position: relative; display: flex; justify-content: center; margin: 8px 0 18px; }
+#habit-tracker-root .wheel-pointer { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 17px solid #F0B94D; z-index: 5; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); }
+#habit-tracker-root .wheel-outer { width: 300px; height: 300px; position: relative; }
+#habit-tracker-root #ht-wheel-svg { width: 100%; height: 100%; display: block; transition: opacity 0.25s; }
+#habit-tracker-root #ht-wheel-group { transform-origin: 160px 160px; transition: transform 4.1s cubic-bezier(0.14,0.65,0.15,1); }
+#habit-tracker-root .wheel-empty { position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center; padding: 1rem; font-size: 12.5px; color: var(--text-muted); }
+#habit-tracker-root .spin-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; margin-top: 4px; background: linear-gradient(135deg, #2FBE93, #1D9E75); color: #0F0E0A; font-weight: 600; font-size: 14.5px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; font-family: inherit; }
+#habit-tracker-root .spin-btn:hover:not(:disabled) { transform: translateY(-1px); }
+#habit-tracker-root .spin-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+#habit-tracker-root .spin-secondary-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0.5px solid var(--border-strong); border-radius: 10px; padding: 9px; background: var(--surface-2); color: var(--text-primary); font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+#habit-tracker-root .spin-secondary-btn:hover:not(:disabled) { background: var(--surface-0); }
+
+#habit-tracker-root .queue-section { margin-top: 16px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+#habit-tracker-root .queue-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+#habit-tracker-root .queue-title { font-size: 12.5px; color: var(--text-secondary); font-weight: 500; }
+#habit-tracker-root .queue-clear-btn { font-size: 11.5px; color: var(--text-muted); background: none; border: none; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; font-family: inherit; padding: 0; }
+#habit-tracker-root .queue-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--surface-1); border-radius: 10px; margin-bottom: 6px; }
+#habit-tracker-root .queue-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+#habit-tracker-root .queue-text { flex: 1; font-size: 13px; min-width: 0; }
+
+#habit-tracker-root .add-habit-row { display: flex; gap: 8px; margin-bottom: 12px; }
+#habit-tracker-root .add-habit-row input { flex: 1; border: 0.5px solid var(--border); border-radius: 10px; padding: 0 14px; height: 40px; background: var(--surface-2); color: var(--text-primary); font-size: 13.5px; font-family: inherit; min-width: 0; }
+#habit-tracker-root .add-habit-row input:focus { outline: none; border-color: #1D9E75; }
+#habit-tracker-root .add-habit-btn { border: none; border-radius: 10px; padding: 0 18px; height: 40px; background: #2FBE93; color: #0F0E0A; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+#habit-tracker-root .list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+#habit-tracker-root .sort-select { border: 0.5px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text-secondary); font-size: 12px; padding: 7px 10px; font-family: inherit; }
+
+#habit-tracker-root .habit-item { display: flex; gap: 12px; padding: 14px; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 16px; margin-bottom: 10px; }
+#habit-tracker-root .habit-accent { width: 4px; align-self: stretch; border-radius: 3px; flex-shrink: 0; }
+#habit-tracker-root .habit-body { flex: 1; min-width: 0; }
+#habit-tracker-root .habit-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+#habit-tracker-root .habit-text { font-size: 14px; font-weight: 500; line-height: 1.4; }
+#habit-tracker-root .habit-actions { display: flex; gap: 1px; flex-shrink: 0; }
+#habit-tracker-root .habit-meta-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-secondary); }
+#habit-tracker-root .chip { font-size: 10.5px; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+#habit-tracker-root .wheel-chip { cursor: pointer; border: 0.5px solid var(--border-strong); background: var(--surface-1); color: var(--text-muted); transition: background 0.15s, color 0.15s, border-color 0.15s; user-select: none; font-family: inherit; }
+#habit-tracker-root .wheel-chip.on { background: rgba(47,190,147,0.16); color: #6EE7C0; border-color: transparent; }
+#habit-tracker-root .streak-chip { background: rgba(240,185,77,0.16); color: #F0B94D; font-weight: 500; }
+#habit-tracker-root .done-btn { border-radius: 50%; width: 34px; height: 34px; border: 1.5px solid var(--border-strong); background: var(--surface-2); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+#habit-tracker-root .done-btn.on { background: #2FBE93; border-color: #2FBE93; color: #0F0E0A; }
+#habit-tracker-root .done-btn.small { width: 28px; height: 28px; }
+#habit-tracker-root .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 13px; }
+
+#habit-tracker-root .habit-edit-row { display: flex; gap: 8px; align-items: center; }
+#habit-tracker-root .habit-edit-input { flex: 1; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 9px 10px; background: var(--surface-1); color: var(--text-primary); font-size: 13.5px; font-family: inherit; min-width: 0; }
+#habit-tracker-root .habit-edit-input:focus { outline: none; border-color: #1D9E75; }
+#habit-tracker-root .habit-confirm-msg { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+
+#habit-tracker-root button:focus-visible,
+#habit-tracker-root input:focus-visible,
+#habit-tracker-root select:focus-visible { outline: 2px solid #2FBE93; outline-offset: 2px; }
+
+@media (max-width: 520px) {
+  #habit-tracker-root { padding: 1.1rem; }
+  #habit-tracker-root #ht-overview-cards { grid-template-columns: 1fr 1fr !important; }
+  #habit-tracker-root .card { padding: 1rem; }
+  #habit-tracker-root .hero-card { padding: 1.1rem 1.2rem; }
+  #habit-tracker-root .wheel-outer { width: 250px; height: 250px; }
+  #habit-tracker-root .habit-top-row { flex-direction: column; }
+  #habit-tracker-root .habit-actions { align-self: flex-end; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #habit-tracker-root #ht-wheel-group { transition: none; }
+}
+</style>
+
+<div id="habit-tracker-root">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 1.5rem;">
+    <div style="display:flex; gap:12px; align-items:center;">
+      <svg width="38" height="38" viewBox="0 0 40 40" style="flex-shrink:0;">
+        <circle cx="20" cy="20" r="14" fill="none" stroke="#9089E0" stroke-width="2" opacity="0.65"/>
+        <line x1="20" y1="6" x2="20" y2="34" stroke="#9089E0" stroke-width="1.4" opacity="0.5"/>
+        <line x1="6" y1="20" x2="34" y2="20" stroke="#9089E0" stroke-width="1.4" opacity="0.5"/>
+        <line x1="9.9" y1="9.9" x2="30.1" y2="30.1" stroke="#9089E0" stroke-width="1.4" opacity="0.3"/>
+        <line x1="30.1" y1="9.9" x2="9.9" y2="30.1" stroke="#9089E0" stroke-width="1.4" opacity="0.3"/>
+        <circle cx="20" cy="20" r="3" fill="#2FBE93"/>
+      </svg>
+      <div>
+        <h1 style="margin: 0 0 4px; font-size: 24px;">Звички</h1>
+        <p style="color: var(--text-secondary); font-size: 12.5px; margin: 0;">колесо фортуни для щоденних справ</p>
+      </div>
+    </div>
+    <div class="menu-wrap">
+      <button class="menu-btn" id="ht-menu-btn" title="Меню">
+        <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="3" cy="8" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="13" cy="8" r="1.3" fill="currentColor"/></svg>
+      </button>
+      <div class="menu-panel" id="ht-menu-panel">
+        <button class="menu-item" id="ht-export-json"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Експорт JSON</button>
+        <button class="menu-item" id="ht-export-csv"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Експорт CSV</button>
+        <button class="menu-item danger" id="ht-reset-history"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M3.5 8a4.5 4.5 0 1 1 1.3 3.2M3.5 8V4.3M3.5 8h3.7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="ht-reset-history-label">Скинути історію</span></button>
+        <div style="padding:8px 10px; font-size:11px; color:var(--text-muted); border-top:0.5px solid var(--border); margin-top:4px;"><span id="ht-save-status" class="save-status">Збережено ✓</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ht-overview-cards" style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:1.5rem;"></div>
+
+  <div class="hero-card" style="margin-bottom:1.5rem;">
+    <div class="section-label" style="margin-bottom:10px;">🎡 Колесо фортуни</div>
+    <div class="wheel-controls-row">
+      <span id="ht-wheel-count-label">—</span>
+      <label class="toggle-switch" id="ht-hide-done-toggle">
+        <span class="toggle-track on" id="ht-hide-done-track"><span class="toggle-thumb"></span></span>
+        <span>приховати виконані сьогодні</span>
+      </label>
+    </div>
+    <div class="wheel-stage">
+      <div class="wheel-pointer"></div>
+      <div class="wheel-outer">
+        <svg id="ht-wheel-svg" viewBox="0 0 320 320">
+          <g id="ht-wheel-group"></g>
+          <circle cx="160" cy="160" r="30" fill="var(--surface-2)" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <text x="160" y="169" text-anchor="middle" font-size="24">🐾</text>
+        </svg>
+        <div class="empty-state wheel-empty" id="ht-wheel-empty" style="display:none;">Немає звичок у колесі — додай звичку нижче або увімкни якусь у списку.</div>
+      </div>
+    </div>
+    <button type="button" class="spin-btn" id="ht-spin-btn">🎡 Крутити колесо</button>
+    <div id="ht-wheel-result"></div>
+
+    <div class="queue-section">
+      <div class="queue-head">
+        <span class="queue-title">Обрано зараз</span>
+        <button type="button" class="queue-clear-btn" id="ht-clear-queue-btn">Очистити</button>
+      </div>
+      <div id="ht-wheel-queue-list"></div>
+    </div>
+  </div>
+
+  <div class="section-label">Мої звички</div>
+  <div class="add-habit-row">
+    <input type="text" id="ht-new-habit-input" placeholder="Нова звичка…" aria-label="Нова звичка">
+    <button type="button" class="add-habit-btn" id="ht-add-habit-btn">Додати</button>
+  </div>
+  <div class="list-toolbar">
+    <select class="sort-select" id="ht-sort-select">
+      <option value="default">Порядок додавання</option>
+      <option value="neglected">Занедбані спочатку</option>
+      <option value="active">Найактивніші спочатку</option>
+      <option value="alpha">За назвою (А-Я)</option>
+    </select>
+  </div>
+  <div id="ht-habits-list"></div>
+
+  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v2 · wheel of habits</div>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'habit-tracker-state';
+  const PALETTE = ['#2FBE93', '#9089E0', '#5BA3E8', '#F0B94D', '#FF7A54', '#6EE7C0'];
+
+  const ICONS = {
+    check: '<path d="M4 8.5l3 3 5.5-6.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    reset: '<path d="M3.5 8a4.5 4.5 0 1 1 1.3 3.2M3.5 8V4.3M3.5 8h3.7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    edit: '<path d="M10.5 2.5l3 3-7.8 7.8H2.7v-3z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round" stroke-linecap="round"/>',
+    trash: '<path d="M3 4.5h10M6.2 4.5V3.2a1 1 0 0 1 1-1h1.6a1 1 0 0 1 1 1V4.5M5.3 4.5l.6 8.1a1 1 0 0 0 1 .9h2.2a1 1 0 0 0 1-.9l.6-8.1" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    x: '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/>'
+  };
+  function icon(name, size){ size = size || 14; return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 16 16" style="display:block;">' + ICONS[name] + '</svg>'; }
+
+  function cv(name, fallback){
+    try {
+      const el = document.getElementById('habit-tracker-root') || document.body;
+      const v = getComputedStyle(el).getPropertyValue(name).trim();
+      return v || fallback;
+    } catch(e){ return fallback; }
+  }
+
+  function escapeHtml(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function uid(){ return 'h_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  function fmtLocal(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayStr(){ return fmtLocal(new Date()); }
+  function colorFor(id){ let s = 0; for (let i = 0; i < id.length; i++) s = (s + id.charCodeAt(i) * (i + 1)) % 997; return PALETTE[s % PALETTE.length]; }
+  function pluralUk(n, one, few, many){
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
+  }
+  function truncateLabel(t){ return t.length > 20 ? t.slice(0, 19) + '…' : t; }
+
+  // Default habits seeded once, from Illia's own list. "wheel: true" means it's eligible for the wheel.
+  const DEFAULT_HABITS = [
+    'Помити з миючим тарілку для корму',
+    'Помити з миючим тарілку для води',
+    'Прогулянка з Річі 30 хв циклічна до досягнення 1:30',
+    'Розчесати Річі 5 хв',
+    'Заміна пелюшки',
+    'Нанести крем на лапи',
+    'Привикання до пшиків',
+    'HIIT (30 min)',
+    'Ірригатор',
+    'Масажер',
+    'Прибирання',
+    'Викинути 5 непотрібних речей',
+    'Розібрати папку Ideas | Thoughts',
+    'Call 1 relative',
+    'Write 3 things that made me happy',
+    'Reply to messages',
+    'Throw out 15 things from iPhone/Macbook',
+    'Say "I love you"',
+    'Manage finances',
+    'Learning English',
+    'Read a book',
+    'Meditation',
+    'Зробити 10000 кроків',
+    'Протерти ноутбук, телефон, годинник, почистити навушники',
+    'Покупати Річі',
+    'Наповнити сумку Річі для смаколиків',
+    'Привести себе в порядок',
+    'Почистити зуби Річі',
+    'Перегляд фільму з Лєною',
+    'Пограти в трейн 30 хв з виписування багів',
+    'Обслужити кавоварку',
+    'Обслужити пилосос',
+    'Навести порядок в гардеробі',
+    'Прочистити ванну',
+    'Стірка лежанки з машини (якщо після минулої стірки пройшло більше 2 тижнів)',
+    'Внести 1 покращення в трекер 12 тижнів',
+    'Внести 1 покращення в трекер місячного бюджету'
+  ];
+
+  let habits = [];
+  let logs = {};
+  let wheelQueue = [];
+  let sortMode = 'default';
+  let hideDoneToday = true;
+  let wheelRotation = 0;
+  let isSpinning = false;
+  let editingId = null;
+  let confirmDeleteId = null;
+  let resetArmed = false;
+  let resetArmTimer = null;
+
+  function seedDefaults(){
+    const today = todayStr();
+    habits = DEFAULT_HABITS.map(t => ({ id: uid(), text: t, createdAt: today, wheel: true }));
+    logs = {};
+    wheelQueue = [];
+  }
+
+  function showSaveStatus(text, isError){
+    const el = document.getElementById('ht-save-status');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = isError ? '#D85A30' : 'var(--text-muted)';
+  }
+
+  async function persist(){
+    showSaveStatus('Збереження…');
+    try {
+      await window.storage.set(STORAGE_KEY, JSON.stringify({ habits: habits, logs: logs, queue: wheelQueue }));
+      showSaveStatus('Збережено ✓');
+    } catch(e){
+      showSaveStatus('Помилка збереження', true);
+    }
+  }
+
+  async function loadState(){
+    try {
+      const r = await window.storage.get(STORAGE_KEY);
+      if (r && r.value){
+        const parsed = JSON.parse(r.value);
+        habits = Array.isArray(parsed.habits) ? parsed.habits : [];
+        logs = (parsed.logs && typeof parsed.logs === 'object') ? parsed.logs : {};
+        wheelQueue = Array.isArray(parsed.queue) ? parsed.queue.filter(id => habits.some(h => h.id === id)) : [];
+      } else {
+        seedDefaults();
+        await persist();
+      }
+    } catch(e){
+      seedDefaults();
+      await persist();
+    }
+    render();
+  }
+
+  // --- Stats helpers ---
+  function isDoneToday(id){ return (logs[id] || []).indexOf(todayStr()) !== -1; }
+  function toggleDoneToday(id){
+    const arr = logs[id] = logs[id] || [];
+    const t = todayStr();
+    const idx = arr.indexOf(t);
+    if (idx >= 0){
+      arr.splice(idx, 1);
+    } else {
+      arr.push(t); arr.sort();
+      wheelQueue = wheelQueue.filter(q => q !== id); // once it's done, it's off today's to-spin queue
+    }
+  }
+  function totalCount(id){ return (logs[id] || []).length; }
+  function lastDoneDate(id){ const arr = logs[id] || []; return arr.length ? arr[arr.length - 1] : null; }
+  function daysSince(dateStr){
+    if (!dateStr) return null;
+    const d0 = new Date(dateStr + 'T00:00:00');
+    const d1 = new Date(todayStr() + 'T00:00:00');
+    return Math.round((d1 - d0) / 86400000);
+  }
+  function currentStreak(id){
+    const set = new Set(logs[id] || []);
+    let streak = 0;
+    const cur = new Date(); cur.setHours(0, 0, 0, 0);
+    let ds = fmtLocal(cur);
+    if (!set.has(ds)){ cur.setDate(cur.getDate() - 1); ds = fmtLocal(cur); }
+    while (set.has(ds)){ streak++; cur.setDate(cur.getDate() - 1); ds = fmtLocal(cur); }
+    return streak;
+  }
+
+  // --- Overview ---
+  function ocard(label, value){
+    return '<div class="card" style="padding:1rem 1.1rem; border-radius:16px;">' +
+      '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">' + label + '</div>' +
+      '<div class="hero-num" style="font-size:22px; line-height:1;">' + value + '</div></div>';
+  }
+  function renderOverview(){
+    const el = document.getElementById('ht-overview-cards');
+    if (!el) return;
+    const activeCount = habits.length;
+    const doneToday = habits.filter(h => isDoneToday(h.id)).length;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let last7 = 0;
+    habits.forEach(h => {
+      (logs[h.id] || []).forEach(ds => {
+        const d = new Date(ds + 'T00:00:00');
+        const diff = Math.round((today - d) / 86400000);
+        if (diff >= 0 && diff < 7) last7++;
+      });
+    });
+    el.innerHTML =
+      ocard('Активних звичок', String(activeCount)) +
+      ocard('Виконано сьогодні', doneToday + ' / ' + activeCount) +
+      ocard('Виконань за 7 днів', String(last7));
+  }
+
+  // --- Wheel geometry ---
+  function polar(cx, cy, r, angleDeg){
+    const rad = angleDeg * Math.PI / 180;
+    return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
+  }
+  function sliceSvg(cx, cy, r, startDeg, endDeg, color, strokeColor){
+    const p1 = polar(cx, cy, r, startDeg);
+    const p2 = polar(cx, cy, r, endDeg);
+    const largeArc = (endDeg - startDeg) > 180 ? 1 : 0;
+    const d = 'M' + cx + ',' + cy + ' L' + p1.x.toFixed(2) + ',' + p1.y.toFixed(2) + ' A' + r + ',' + r + ' 0 ' + largeArc + ' 1 ' + p2.x.toFixed(2) + ',' + p2.y.toFixed(2) + ' Z';
+    return '<path d="' + d + '" fill="' + color + '" stroke="' + strokeColor + '" stroke-width="1.5" />';
+  }
+  function getWheelCandidates(){
+    return habits.filter(h => h.wheel !== false && !(hideDoneToday && isDoneToday(h.id)));
+  }
+  function renderWheelSlices(){
+    if (isSpinning) return;
+    const candidates = getWheelCandidates();
+    window._htCandidates = candidates;
+    const label = document.getElementById('ht-wheel-count-label');
+    if (label) label.textContent = candidates.length + ' ' + pluralUk(candidates.length, 'звичка', 'звички', 'звичок') + ' у колесі';
+    const group = document.getElementById('ht-wheel-group');
+    const svg = document.getElementById('ht-wheel-svg');
+    const empty = document.getElementById('ht-wheel-empty');
+    const spinBtn = document.getElementById('ht-spin-btn');
+    if (!group) return;
+    if (!candidates.length){
+      group.innerHTML = '';
+      if (svg) svg.style.opacity = '0.15';
+      if (empty) empty.style.display = 'flex';
+      if (spinBtn) spinBtn.disabled = true;
+      return;
+    }
+    if (svg) svg.style.opacity = '1';
+    if (empty) empty.style.display = 'none';
+    if (spinBtn) spinBtn.disabled = false;
+    const n = candidates.length;
+    const sliceDeg = 360 / n;
+    const strokeColor = cv('--surface-0', '#0F0E0A');
+    let html = '';
+    candidates.forEach((h, i) => {
+      const start = i * sliceDeg, end = (i + 1) * sliceDeg;
+      const color = colorFor(h.id);
+      html += sliceSvg(160, 160, 145, start, end, color, strokeColor);
+      const mid = start + sliceDeg / 2;
+      const pos = polar(160, 160, 112, mid);
+      const rot = mid <= 180 ? (mid - 90) : (mid - 270);
+      html += '<text x="' + pos.x.toFixed(2) + '" y="' + pos.y.toFixed(2) + '" transform="rotate(' + rot.toFixed(2) + ' ' + pos.x.toFixed(2) + ' ' + pos.y.toFixed(2) + ')" text-anchor="middle" dominant-baseline="middle" font-size="9.5" font-family="Inter, sans-serif" font-weight="600" fill="#12110C">' + escapeHtml(truncateLabel(h.text)) + '</text>';
+    });
+    group.innerHTML = html;
+  }
+
+  function spin(){
+    const candidates = window._htCandidates || [];
+    if (!candidates.length || isSpinning) return;
+    isSpinning = true;
+    const spinBtn = document.getElementById('ht-spin-btn');
+    if (spinBtn) spinBtn.disabled = true;
+    const n = candidates.length;
+    const idx = Math.floor(Math.random() * n);
+    const sliceDeg = 360 / n;
+    const centerAngle = idx * sliceDeg + sliceDeg / 2;
+    const currentMod = ((wheelRotation % 360) + 360) % 360;
+    const desiredMod = (360 - centerAngle) % 360;
+    const delta = (desiredMod - currentMod + 360) % 360;
+    const extraSpins = 5 + Math.floor(Math.random() * 3);
+    wheelRotation += extraSpins * 360 + delta;
+    const group = document.getElementById('ht-wheel-group');
+    if (group) group.style.transform = 'rotate(' + wheelRotation + 'deg)';
+    setTimeout(function(){
+      isSpinning = false;
+      showWheelResult(candidates[idx]);
+      if (spinBtn) spinBtn.disabled = false;
+    }, 4300);
+  }
+
+  function showWheelResult(h){
+    if (wheelQueue.indexOf(h.id) === -1) wheelQueue.push(h.id);
+    const box = document.getElementById('ht-wheel-result');
+    if (box){
+      box.innerHTML = '<div style="text-align:center; font-size:12.5px; color:var(--text-secondary); margin-top:12px;">Випало: <strong style="color:var(--text-primary); font-weight:600;">' + escapeHtml(h.text) + '</strong> · додано в чергу нижче</div>';
+    }
+    persist();
+    render();
+  }
+
+  // --- Queue (things picked by the wheel, waiting to be done whenever) ---
+  function buildQueueRow(id){
+    const h = habits.find(x => x.id === id);
+    if (!h) return null;
+    const row = document.createElement('div'); row.className = 'queue-item';
+    const dot = document.createElement('span'); dot.className = 'queue-dot'; dot.style.background = colorFor(id);
+    row.appendChild(dot);
+    const text = document.createElement('span'); text.className = 'queue-text'; text.textContent = h.text;
+    row.appendChild(text);
+    const doneBtn = document.createElement('button'); doneBtn.type = 'button'; doneBtn.className = 'done-btn small' + (isDoneToday(id) ? ' on' : ''); doneBtn.title = 'Позначити виконаним';
+    doneBtn.innerHTML = icon('check', 14);
+    doneBtn.onclick = () => { toggleDoneToday(id); persist(); render(); };
+    row.appendChild(doneBtn);
+    const rmBtn = document.createElement('button'); rmBtn.type = 'button'; rmBtn.className = 'icon-btn'; rmBtn.title = 'Прибрати з черги';
+    rmBtn.innerHTML = icon('x', 14);
+    rmBtn.onclick = () => { wheelQueue = wheelQueue.filter(q => q !== id); persist(); render(); };
+    row.appendChild(rmBtn);
+    return row;
+  }
+  function renderQueue(){
+    const list = document.getElementById('ht-wheel-queue-list');
+    if (!list) return;
+    const valid = wheelQueue.filter(id => habits.some(h => h.id === id));
+    wheelQueue = valid;
+    list.innerHTML = '';
+    if (!valid.length){
+      list.innerHTML = '<div class="empty-state" style="padding:0.75rem 0.5rem;">Ще нічого не обрано — крутни колесо кілька разів, щоб зібрати собі список на зараз.</div>';
+      return;
+    }
+    valid.forEach(id => { const row = buildQueueRow(id); if (row) list.appendChild(row); });
+  }
+
+  // --- Habit list management ---
+  function getSortedHabits(){
+    const arr = habits.slice();
+    if (sortMode === 'neglected'){
+      arr.sort((a, b) => {
+        const da = daysSince(lastDoneDate(a.id)); const db = daysSince(lastDoneDate(b.id));
+        const va = da === null ? Infinity : da;
+        const vb = db === null ? Infinity : db;
+        return vb - va;
+      });
+    } else if (sortMode === 'active'){
+      arr.sort((a, b) => totalCount(b.id) - totalCount(a.id));
+    } else if (sortMode === 'alpha'){
+      arr.sort((a, b) => a.text.localeCompare(b.text, 'uk'));
+    }
+    return arr;
+  }
+
+  function buildHabitRow(h){
+    const id = h.id;
+    const color = colorFor(id);
+    const row = document.createElement('div'); row.className = 'habit-item';
+    const accent = document.createElement('div'); accent.className = 'habit-accent'; accent.style.background = color;
+    row.appendChild(accent);
+    const body = document.createElement('div'); body.className = 'habit-body';
+
+    if (editingId === id){
+      const editRow = document.createElement('div'); editRow.className = 'habit-edit-row';
+      const input = document.createElement('input'); input.type = 'text'; input.className = 'habit-edit-input'; input.value = h.text;
+      const save = () => { const v = input.value.trim(); if (v) h.text = v; editingId = null; persist(); render(); };
+      const cancel = () => { editingId = null; render(); };
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); });
+      const saveBtn = document.createElement('button'); saveBtn.type = 'button'; saveBtn.className = 'icon-btn'; saveBtn.title = 'Зберегти'; saveBtn.innerHTML = icon('check', 16); saveBtn.onclick = save;
+      const cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'icon-btn'; cancelBtn.title = 'Скасувати'; cancelBtn.innerHTML = icon('x', 15); cancelBtn.onclick = cancel;
+      editRow.appendChild(input); editRow.appendChild(saveBtn); editRow.appendChild(cancelBtn);
+      body.appendChild(editRow);
+      row.appendChild(body);
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+      return row;
+    }
+
+    if (confirmDeleteId === id){
+      const confirmRow = document.createElement('div');
+      const msg = document.createElement('div'); msg.className = 'habit-confirm-msg'; msg.textContent = 'Видалити «' + h.text + '»? Історія виконань теж зникне.';
+      confirmRow.appendChild(msg);
+      const btnRow = document.createElement('div'); btnRow.style.cssText = 'display:flex; gap:8px; margin-top:10px;';
+      const yesBtn = document.createElement('button'); yesBtn.type = 'button'; yesBtn.className = 'spin-secondary-btn'; yesBtn.style.color = '#F0937A'; yesBtn.textContent = 'Так, видалити';
+      yesBtn.onclick = () => {
+        habits = habits.filter(x => x.id !== id);
+        delete logs[id];
+        wheelQueue = wheelQueue.filter(q => q !== id);
+        confirmDeleteId = null;
+        persist(); render();
+      };
+      const noBtn = document.createElement('button'); noBtn.type = 'button'; noBtn.className = 'spin-secondary-btn'; noBtn.textContent = 'Скасувати';
+      noBtn.onclick = () => { confirmDeleteId = null; render(); };
+      btnRow.appendChild(yesBtn); btnRow.appendChild(noBtn);
+      confirmRow.appendChild(btnRow);
+      body.appendChild(confirmRow);
+      row.appendChild(body);
+      return row;
+    }
+
+    const top = document.createElement('div'); top.className = 'habit-top-row';
+    const textSpan = document.createElement('div'); textSpan.className = 'habit-text'; textSpan.textContent = h.text;
+    top.appendChild(textSpan);
+    const actions = document.createElement('div'); actions.className = 'habit-actions';
+    const doneBtn = document.createElement('button'); doneBtn.type = 'button'; doneBtn.className = 'done-btn' + (isDoneToday(id) ? ' on' : ''); doneBtn.title = 'Позначити виконаним сьогодні';
+    doneBtn.innerHTML = icon('check', 16);
+    doneBtn.onclick = () => { toggleDoneToday(id); persist(); render(); };
+    const editBtn = document.createElement('button'); editBtn.type = 'button'; editBtn.className = 'icon-btn'; editBtn.title = 'Редагувати'; editBtn.innerHTML = icon('edit', 15);
+    editBtn.onclick = () => { editingId = id; confirmDeleteId = null; render(); };
+    const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'icon-btn'; delBtn.title = 'Видалити'; delBtn.innerHTML = icon('trash', 15);
+    delBtn.onclick = () => { confirmDeleteId = id; editingId = null; render(); };
+    actions.appendChild(doneBtn); actions.appendChild(editBtn); actions.appendChild(delBtn);
+    top.appendChild(actions);
+    body.appendChild(top);
+
+    const meta = document.createElement('div'); meta.className = 'habit-meta-row';
+    const streak = currentStreak(id);
+    if (streak > 0){
+      const sc = document.createElement('span'); sc.className = 'chip streak-chip';
+      sc.textContent = '🔥 ' + streak + ' ' + pluralUk(streak, 'день', 'дні', 'днів');
+      meta.appendChild(sc);
+    }
+    const lastSpan = document.createElement('span');
+    const last = lastDoneDate(id);
+    if (!last) lastSpan.textContent = 'ще не виконувалась';
+    else {
+      const ds = daysSince(last);
+      lastSpan.textContent = ds === 0 ? 'сьогодні' : ds === 1 ? 'учора' : ds + ' дн. тому';
+    }
+    meta.appendChild(lastSpan);
+    const totalSpan = document.createElement('span'); totalSpan.textContent = totalCount(id) + 'x всього';
+    meta.appendChild(totalSpan);
+    const wheelChip = document.createElement('span');
+    wheelChip.className = 'chip wheel-chip' + (h.wheel !== false ? ' on' : '');
+    wheelChip.textContent = h.wheel !== false ? 'у колесі' : 'поза колесом';
+    wheelChip.onclick = () => { h.wheel = (h.wheel === false) ? true : false; persist(); render(); };
+    meta.appendChild(wheelChip);
+    body.appendChild(meta);
+
+    row.appendChild(body);
+    return row;
+  }
+
+  function renderHabitsList(){
+    const wrap = document.getElementById('ht-habits-list');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    if (!habits.length){
+      wrap.innerHTML = '<div class="empty-state">Ще немає звичок. Додай першу вище — і зможеш крутити колесо.</div>';
+      return;
+    }
+    const sorted = getSortedHabits();
+    sorted.forEach(h => wrap.appendChild(buildHabitRow(h)));
+  }
+
+  function addHabit(){
+    const input = document.getElementById('ht-new-habit-input');
+    if (!input) return;
+    const v = input.value.trim();
+    if (!v) return;
+    habits.push({ id: uid(), text: v, createdAt: todayStr(), wheel: true });
+    input.value = '';
+    persist(); render();
+    input.focus();
+  }
+
+  function exportData(format){
+    let content, mime, filename;
+    if (format === 'json'){
+      content = JSON.stringify({ habits: habits, logs: logs }, null, 2);
+      mime = 'application/json'; filename = 'habit-tracker.json';
+    } else {
+      const rows = ['id,text,inWheel,totalCount,currentStreak,lastDone,createdAt'];
+      habits.forEach(h => {
+        const text = '"' + String(h.text).replace(/"/g, '""') + '"';
+        rows.push([h.id, text, h.wheel !== false ? 1 : 0, totalCount(h.id), currentStreak(h.id), lastDoneDate(h.id) || '', h.createdAt || ''].join(','));
+      });
+      content = rows.join('\n'); mime = 'text/csv'; filename = 'habit-tracker.csv';
+    }
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function render(){
+    try {
+      renderOverview();
+      renderWheelSlices();
+      renderQueue();
+      renderHabitsList();
+    } catch(err){
+      const root = document.getElementById('habit-tracker-root');
+      if (root) root.innerHTML = '<div style="padding:20px; font-family:sans-serif; color:#854F0B;">Трекер не зміг відобразитись через помилку: ' + (err && err.message ? err.message : String(err)) + '.</div>';
+    }
+  }
+
+  const $ = (id) => document.getElementById(id);
+  if ($('ht-menu-btn')) $('ht-menu-btn').onclick = (e) => { e.stopPropagation(); if ($('ht-menu-panel')) $('ht-menu-panel').classList.toggle('open'); };
+  document.addEventListener('click', () => { if ($('ht-menu-panel')) $('ht-menu-panel').classList.remove('open'); });
+  if ($('ht-export-json')) $('ht-export-json').onclick = () => exportData('json');
+  if ($('ht-export-csv')) $('ht-export-csv').onclick = () => exportData('csv');
+  if ($('ht-reset-history')){
+    $('ht-reset-history').onclick = (e) => {
+      e.stopPropagation();
+      const label = $('ht-reset-history-label');
+      if (!resetArmed){
+        resetArmed = true;
+        if (label) label.textContent = 'Клікни ще раз для підтвердження';
+        resetArmTimer = setTimeout(() => { resetArmed = false; if (label) label.textContent = 'Скинути історію'; }, 4000);
+      } else {
+        clearTimeout(resetArmTimer);
+        resetArmed = false;
+        if (label) label.textContent = 'Скинути історію';
+        logs = {};
+        wheelQueue = [];
+        persist(); render();
+        if ($('ht-menu-panel')) $('ht-menu-panel').classList.remove('open');
+      }
+    };
+  }
+  if ($('ht-hide-done-toggle')) $('ht-hide-done-toggle').onclick = () => {
+    hideDoneToday = !hideDoneToday;
+    if ($('ht-hide-done-track')) $('ht-hide-done-track').classList.toggle('on', hideDoneToday);
+    renderWheelSlices();
+  };
+  if ($('ht-spin-btn')) $('ht-spin-btn').onclick = spin;
+  if ($('ht-clear-queue-btn')) $('ht-clear-queue-btn').onclick = () => { wheelQueue = []; persist(); render(); };
+  if ($('ht-add-habit-btn')) $('ht-add-habit-btn').onclick = addHabit;
+  if ($('ht-new-habit-input')) $('ht-new-habit-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addHabit(); });
+  if ($('ht-sort-select')) $('ht-sort-select').onchange = (e) => { sortMode = e.target.value; renderHabitsList(); };
+
+  loadState();
+})();
+</script>
