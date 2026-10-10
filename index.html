@@ -88,6 +88,7 @@
 #habit-tracker-root .add-habit-row input { flex: 1; border: 0.5px solid var(--border); border-radius: 10px; padding: 0 14px; height: 40px; background: var(--surface-2); color: var(--text-primary); font-size: 13.5px; font-family: inherit; min-width: 0; }
 #habit-tracker-root .add-habit-row input:focus { outline: none; border-color: #1D9E75; }
 #habit-tracker-root .add-habit-btn { border: none; border-radius: 10px; padding: 0 18px; height: 40px; background: #2FBE93; color: #0F0E0A; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+#habit-tracker-root .add-habit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 #habit-tracker-root .list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 #habit-tracker-root .sort-select { border: 0.5px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text-secondary); font-size: 12px; padding: 7px 10px; font-family: inherit; }
 
@@ -111,6 +112,34 @@
 #habit-tracker-root .habit-edit-input { flex: 1; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 9px 10px; background: var(--surface-1); color: var(--text-primary); font-size: 13.5px; font-family: inherit; min-width: 0; }
 #habit-tracker-root .habit-edit-input:focus { outline: none; border-color: #1D9E75; }
 #habit-tracker-root .habit-confirm-msg { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+
+/* --- Масові операції: додавання списком і вибір кількох звичок --- */
+#habit-tracker-root .bulk-toggle-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+#habit-tracker-root .link-btn { font-size: 11.5px; color: var(--text-muted); background: none; border: none; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; font-family: inherit; padding: 0; }
+#habit-tracker-root .link-btn:hover { color: var(--text-primary); }
+#habit-tracker-root .link-btn.on { color: #6EE7C0; }
+
+#habit-tracker-root .bulk-add-panel { border: 0.5px solid var(--border-strong); border-radius: 14px; padding: 12px; background: var(--surface-2); margin-bottom: 12px; }
+#habit-tracker-root .bulk-add-panel textarea { width: 100%; min-height: 130px; resize: vertical; border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface-1); color: var(--text-primary); font-size: 13.5px; line-height: 1.5; font-family: inherit; box-sizing: border-box; }
+#habit-tracker-root .bulk-add-panel textarea:focus { outline: none; border-color: #1D9E75; }
+#habit-tracker-root .bulk-add-foot { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+#habit-tracker-root .bulk-add-hint { flex: 1; min-width: 150px; font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+
+#habit-tracker-root .select-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 12px; border-radius: 12px; background: var(--surface-1); border: 0.5px solid var(--border-strong); }
+/* лічильник займає власний рядок, а текст не переносить: інакше панель міняє
+   висоту при кожному виборі і список «стрибає» під курсором */
+#habit-tracker-root .select-bar-count { flex: 1 0 100%; font-size: 12.5px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#habit-tracker-root .select-bar .link-btn { margin-right: auto; }
+#habit-tracker-root .ghost-btn { border: 0.5px solid var(--border-strong); border-radius: 10px; padding: 8px 14px; background: var(--surface-2); color: var(--text-primary); font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit; }
+#habit-tracker-root .ghost-btn:hover { background: var(--surface-0); }
+#habit-tracker-root .danger-btn { border: 0.5px solid rgba(240,147,122,0.5); border-radius: 10px; padding: 8px 14px; background: rgba(240,147,122,0.12); color: #F0937A; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+#habit-tracker-root .danger-btn:hover:not(:disabled) { background: rgba(240,147,122,0.2); }
+#habit-tracker-root .danger-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#habit-tracker-root .habit-item.selectable { cursor: pointer; user-select: none; }
+#habit-tracker-root .habit-item.selected { border-color: #2FBE93; background: rgba(47,190,147,0.07); }
+#habit-tracker-root .habit-check { width: 20px; height: 20px; align-self: center; flex-shrink: 0; border-radius: 6px; border: 1.5px solid var(--border-strong); background: var(--surface-1); color: transparent; display: flex; align-items: center; justify-content: center; }
+#habit-tracker-root .habit-check.on { background: #2FBE93; border-color: #2FBE93; color: #0F0E0A; }
 
 #habit-tracker-root button:focus-visible,
 #habit-tracker-root input:focus-visible,
@@ -192,10 +221,32 @@
   </div>
 
   <div class="section-label">Мої звички</div>
-  <div class="add-habit-row">
+  <div class="add-habit-row" id="ht-add-habit-row">
     <input type="text" id="ht-new-habit-input" placeholder="Нова звичка…" aria-label="Нова звичка">
     <button type="button" class="add-habit-btn" id="ht-add-habit-btn">Додати</button>
   </div>
+
+  <div class="bulk-toggle-row">
+    <button type="button" class="link-btn" id="ht-bulk-add-toggle">Додати списком</button>
+    <button type="button" class="link-btn" id="ht-select-mode-toggle">Вибрати кілька</button>
+  </div>
+
+  <div class="bulk-add-panel" id="ht-bulk-add-panel" style="display:none;">
+    <textarea id="ht-bulk-add-textarea" placeholder="Помити тарілку&#10;Прогулянка 30 хв&#10;Прочитати 10 сторінок" aria-label="Список звичок, по одній на рядок"></textarea>
+    <div class="bulk-add-foot">
+      <span class="bulk-add-hint" id="ht-bulk-add-hint"></span>
+      <button type="button" class="ghost-btn" id="ht-bulk-add-cancel">Скасувати</button>
+      <button type="button" class="add-habit-btn" id="ht-bulk-add-submit">Додати всі</button>
+    </div>
+  </div>
+
+  <div class="select-bar" id="ht-select-bar" style="display:none;">
+    <span class="select-bar-count" id="ht-select-count"></span>
+    <button type="button" class="link-btn" id="ht-select-all">Вибрати всі</button>
+    <button type="button" class="ghost-btn" id="ht-select-cancel">Скасувати</button>
+    <button type="button" class="danger-btn" id="ht-bulk-delete">Видалити</button>
+  </div>
+
   <div class="list-toolbar">
     <select class="sort-select" id="ht-sort-select">
       <option value="default">Порядок додавання</option>
@@ -206,7 +257,7 @@
   </div>
   <div id="ht-habits-list"></div>
 
-  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v3 · синхронізовано з Google Sheets</div>
+  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v4 · синхронізовано з Google Sheets</div>
 </div>
 
 <script>
@@ -299,6 +350,11 @@
   let confirmDeleteId = null;
   let resetArmed = false;
   let resetArmTimer = null;
+  let bulkAddOpen = false;
+  let selectMode = false;
+  let selectedIds = new Set();
+  let bulkDeleteArmed = false;
+  let bulkDeleteArmTimer = null;
 
   function seedDefaults(){
     const today = todayStr();
@@ -370,6 +426,12 @@
     const d0 = new Date(dateStr + 'T00:00:00');
     const d1 = new Date(todayStr() + 'T00:00:00');
     return Math.round((d1 - d0) / 86400000);
+  }
+  function lastDoneLabel(id){
+    const last = lastDoneDate(id);
+    if (!last) return 'ще не виконувалась';
+    const ds = daysSince(last);
+    return ds === 0 ? 'сьогодні' : ds === 1 ? 'учора' : ds + ' дн. тому';
   }
   function currentStreak(id){
     const set = new Set(logs[id] || []);
@@ -571,6 +633,31 @@
     const id = h.id;
     const color = colorFor(id);
     const row = document.createElement('div'); row.className = 'habit-item';
+
+    // Режим вибору: чекбокс + назва, без кнопок дій — рядок цілком клікабельний.
+    if (selectMode){
+      const on = selectedIds.has(id);
+      row.className = 'habit-item selectable' + (on ? ' selected' : '');
+      const check = document.createElement('span');
+      check.className = 'habit-check' + (on ? ' on' : '');
+      check.innerHTML = icon('check', 13);
+      row.appendChild(check);
+      const selAccent = document.createElement('div'); selAccent.className = 'habit-accent'; selAccent.style.background = color;
+      row.appendChild(selAccent);
+      const selBody = document.createElement('div'); selBody.className = 'habit-body';
+      const selText = document.createElement('div'); selText.className = 'habit-text'; selText.style.marginBottom = '6px'; selText.textContent = h.text;
+      selBody.appendChild(selText);
+      const selMeta = document.createElement('div'); selMeta.className = 'habit-meta-row';
+      const selLast = document.createElement('span'); selLast.textContent = lastDoneLabel(id);
+      selMeta.appendChild(selLast);
+      const selTotal = document.createElement('span'); selTotal.textContent = totalCount(id) + 'x всього';
+      selMeta.appendChild(selTotal);
+      selBody.appendChild(selMeta);
+      row.appendChild(selBody);
+      row.onclick = () => toggleSelected(id);
+      return row;
+    }
+
     const accent = document.createElement('div'); accent.className = 'habit-accent'; accent.style.background = color;
     row.appendChild(accent);
     const body = document.createElement('div'); body.className = 'habit-body';
@@ -635,12 +722,7 @@
       meta.appendChild(sc);
     }
     const lastSpan = document.createElement('span');
-    const last = lastDoneDate(id);
-    if (!last) lastSpan.textContent = 'ще не виконувалась';
-    else {
-      const ds = daysSince(last);
-      lastSpan.textContent = ds === 0 ? 'сьогодні' : ds === 1 ? 'учора' : ds + ' дн. тому';
-    }
+    lastSpan.textContent = lastDoneLabel(id);
     meta.appendChild(lastSpan);
     const totalSpan = document.createElement('span'); totalSpan.textContent = totalCount(id) + 'x всього';
     meta.appendChild(totalSpan);
@@ -678,6 +760,155 @@
     input.focus();
   }
 
+  // --- Масове додавання: один рядок = одна звичка ---
+  // Повертає { toAdd, dupes }: що додамо і що пропустили як дублікат
+  // (дублікати шукаються і серед наявних звичок, і всередині самого списку).
+  function parseBulkHabits(raw){
+    const existing = new Set(habits.map(h => String(h.text).trim().toLowerCase()));
+    const seen = new Set();
+    const toAdd = [], dupes = [];
+    String(raw == null ? '' : raw).split(/\r?\n/).forEach(line => {
+      // прибираємо маркери списків: "- ", "* ", "• ", "1. ", "2) "
+      const t = line.replace(/^\s*(?:[-*•–—]|\d+[.)])\s+/, '').trim();
+      if (!t) return;
+      const key = t.toLowerCase();
+      if (existing.has(key) || seen.has(key)){ dupes.push(t); return; }
+      seen.add(key);
+      toAdd.push(t);
+    });
+    return { toAdd: toAdd, dupes: dupes };
+  }
+
+  function addHabitsBulk(){
+    const ta = document.getElementById('ht-bulk-add-textarea');
+    if (!ta) return;
+    const parsed = parseBulkHabits(ta.value);
+    if (!parsed.toAdd.length) return;
+    const today = todayStr();
+    parsed.toAdd.forEach(t => habits.push({ id: uid(), text: t, createdAt: today, wheel: true }));
+    ta.value = '';
+    bulkAddOpen = false;
+    persist(); render();
+  }
+
+  function updateBulkAddHint(){
+    const ta = document.getElementById('ht-bulk-add-textarea');
+    const hint = document.getElementById('ht-bulk-add-hint');
+    const btn = document.getElementById('ht-bulk-add-submit');
+    if (!ta) return;
+    const parsed = parseBulkHabits(ta.value);
+    if (btn){
+      btn.disabled = !parsed.toAdd.length;
+      btn.textContent = parsed.toAdd.length ? ('Додати ' + parsed.toAdd.length) : 'Додати всі';
+    }
+    if (!hint) return;
+    if (!ta.value.trim()){
+      hint.textContent = 'По одній звичці на рядок. Маркери «-», «•», «1.» прибираються автоматично.';
+      return;
+    }
+    let t = 'Буде додано ' + parsed.toAdd.length + ' ' + pluralUk(parsed.toAdd.length, 'звичку', 'звички', 'звичок');
+    if (parsed.dupes.length){
+      t += ' · ' + parsed.dupes.length + ' ' + pluralUk(parsed.dupes.length, 'дублікат', 'дублікати', 'дублікатів') + ' пропущено';
+    }
+    hint.textContent = t;
+  }
+
+  function setBulkAddOpen(open){
+    bulkAddOpen = open;
+    if (open){ selectMode = false; disarmBulkDelete(); selectedIds.clear(); }
+    render();
+    if (open){
+      const ta = document.getElementById('ht-bulk-add-textarea');
+      if (ta) ta.focus();
+    }
+  }
+
+  function renderBulkAdd(){
+    const panel = document.getElementById('ht-bulk-add-panel');
+    const toggle = document.getElementById('ht-bulk-add-toggle');
+    const row = document.getElementById('ht-add-habit-row');
+    if (toggle){
+      toggle.textContent = bulkAddOpen ? 'Згорнути список' : 'Додати списком';
+      toggle.classList.toggle('on', bulkAddOpen);
+    }
+    if (row) row.style.display = bulkAddOpen ? 'none' : 'flex';
+    if (!panel) return;
+    panel.style.display = bulkAddOpen ? 'block' : 'none';
+    if (bulkAddOpen) updateBulkAddHint();
+  }
+
+  // --- Масове видалення: режим вибору + підтвердження у два кліки ---
+  function disarmBulkDelete(){
+    bulkDeleteArmed = false;
+    if (bulkDeleteArmTimer){ clearTimeout(bulkDeleteArmTimer); bulkDeleteArmTimer = null; }
+  }
+
+  function setSelectMode(on){
+    selectMode = on;
+    disarmBulkDelete();
+    if (on){ bulkAddOpen = false; editingId = null; confirmDeleteId = null; }
+    else selectedIds.clear();
+    render();
+  }
+
+  function toggleSelected(id){
+    if (selectedIds.has(id)) selectedIds.delete(id);
+    else selectedIds.add(id);
+    disarmBulkDelete();
+    renderSelectBar();
+    renderHabitsList();
+  }
+
+  function toggleSelectAll(){
+    if (selectedIds.size === habits.length) selectedIds.clear();
+    else habits.forEach(h => selectedIds.add(h.id));
+    disarmBulkDelete();
+    renderSelectBar();
+    renderHabitsList();
+  }
+
+  function bulkDeleteSelected(){
+    const ids = Array.from(selectedIds).filter(id => habits.some(h => h.id === id));
+    if (!ids.length) return;
+    const doomed = new Set(ids);
+    habits = habits.filter(h => !doomed.has(h.id));
+    ids.forEach(id => { delete logs[id]; });
+    wheelQueue = wheelQueue.filter(q => !doomed.has(q));
+    if (lastPickedId && doomed.has(lastPickedId)) lastPickedId = null;
+    selectedIds.clear();
+    selectMode = false;
+    disarmBulkDelete();
+    persist(); render();
+  }
+
+  function renderSelectBar(){
+    const bar = document.getElementById('ht-select-bar');
+    const toggle = document.getElementById('ht-select-mode-toggle');
+    // прибираємо з вибору те, чого вже немає (напр. після оновлення з Таблиці)
+    Array.from(selectedIds).forEach(id => { if (!habits.some(h => h.id === id)) selectedIds.delete(id); });
+    if (toggle){
+      toggle.textContent = selectMode ? 'Вийти з вибору' : 'Вибрати кілька';
+      toggle.classList.toggle('on', selectMode);
+    }
+    if (!bar) return;
+    bar.style.display = selectMode ? 'flex' : 'none';
+    if (!selectMode) return;
+    const n = selectedIds.size;
+    // Підписи навмисно короткі й однорядкові — див. коментар до .select-bar-count.
+    const countEl = document.getElementById('ht-select-count');
+    if (countEl){
+      if (bulkDeleteArmed) countEl.textContent = 'Натисни ще раз, щоб видалити';
+      else countEl.textContent = n ? ('Вибрано: ' + n) : 'Нічого не вибрано';
+    }
+    const allBtn = document.getElementById('ht-select-all');
+    if (allBtn) allBtn.textContent = (habits.length && n === habits.length) ? 'Зняти всі' : 'Вибрати всі';
+    const delBtn = document.getElementById('ht-bulk-delete');
+    if (delBtn){
+      delBtn.disabled = !n;
+      delBtn.textContent = bulkDeleteArmed ? ('Точно? (' + n + ')') : ('Видалити' + (n ? ' (' + n + ')' : ''));
+    }
+  }
+
   function exportData(format){
     let content, mime, filename;
     if (format === 'json'){
@@ -702,6 +933,8 @@
       renderOverview();
       renderReelIdle();
       renderQueue();
+      renderBulkAdd();
+      renderSelectBar();
       renderHabitsList();
     } catch(err){
       const root = document.getElementById('habit-tracker-root');
@@ -743,6 +976,29 @@
   if ($('ht-clear-queue-btn')) $('ht-clear-queue-btn').onclick = () => { wheelQueue = []; persist(); render(); };
   if ($('ht-add-habit-btn')) $('ht-add-habit-btn').onclick = addHabit;
   if ($('ht-new-habit-input')) $('ht-new-habit-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addHabit(); });
+  if ($('ht-bulk-add-toggle')) $('ht-bulk-add-toggle').onclick = () => setBulkAddOpen(!bulkAddOpen);
+  if ($('ht-bulk-add-cancel')) $('ht-bulk-add-cancel').onclick = () => setBulkAddOpen(false);
+  if ($('ht-bulk-add-submit')) $('ht-bulk-add-submit').onclick = addHabitsBulk;
+  if ($('ht-bulk-add-textarea')){
+    $('ht-bulk-add-textarea').addEventListener('input', updateBulkAddHint);
+    $('ht-bulk-add-textarea').addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); addHabitsBulk(); }
+      if (e.key === 'Escape') setBulkAddOpen(false);
+    });
+  }
+  if ($('ht-select-mode-toggle')) $('ht-select-mode-toggle').onclick = () => setSelectMode(!selectMode);
+  if ($('ht-select-cancel')) $('ht-select-cancel').onclick = () => setSelectMode(false);
+  if ($('ht-select-all')) $('ht-select-all').onclick = toggleSelectAll;
+  if ($('ht-bulk-delete')) $('ht-bulk-delete').onclick = () => {
+    if (!selectedIds.size) return;
+    if (!bulkDeleteArmed){
+      bulkDeleteArmed = true;
+      renderSelectBar();
+      bulkDeleteArmTimer = setTimeout(() => { bulkDeleteArmed = false; bulkDeleteArmTimer = null; renderSelectBar(); }, 4000);
+    } else {
+      bulkDeleteSelected();
+    }
+  };
   if ($('ht-sort-select')) $('ht-sort-select').onchange = (e) => { sortMode = e.target.value; renderHabitsList(); };
 
   loadState();
