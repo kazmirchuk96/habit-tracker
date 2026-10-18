@@ -141,7 +141,12 @@
 /* лічильник займає власний рядок, а текст не переносить: інакше панель міняє
    висоту при кожному виборі і список «стрибає» під курсором */
 #habit-tracker-root .select-bar-count { flex: 1 0 100%; font-size: 12.5px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#habit-tracker-root .select-bar .link-btn { margin-right: auto; }
+#habit-tracker-root .select-bar .link-btn { margin-right: auto; min-width: 74px; text-align: left; }
+#habit-tracker-root .ghost-btn.on { background: rgba(144,137,224,0.2); color: #B5AFF0; border-color: transparent; }
+#habit-tracker-root .ghost-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#habit-tracker-root .select-freq { margin-bottom: 12px; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border-strong); }
+#habit-tracker-root .select-freq-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+#habit-tracker-root .freq-opt:disabled { opacity: 0.4; cursor: not-allowed; }
 #habit-tracker-root .ghost-btn { border: 0.5px solid var(--border-strong); border-radius: 10px; padding: 8px 14px; background: var(--surface-2); color: var(--text-primary); font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit; }
 #habit-tracker-root .ghost-btn:hover { background: var(--surface-0); }
 #habit-tracker-root .danger-btn { border: 0.5px solid rgba(240,147,122,0.5); border-radius: 10px; padding: 8px 14px; background: rgba(240,147,122,0.12); color: #F0937A; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
@@ -255,9 +260,11 @@
   <div class="select-bar" id="ht-select-bar" style="display:none;">
     <span class="select-bar-count" id="ht-select-count"></span>
     <button type="button" class="link-btn" id="ht-select-all">Вибрати всі</button>
+    <button type="button" class="ghost-btn" id="ht-select-freq-btn">Частота</button>
     <button type="button" class="ghost-btn" id="ht-select-cancel">Скасувати</button>
     <button type="button" class="danger-btn" id="ht-bulk-delete">Видалити</button>
   </div>
+  <div class="select-freq" id="ht-select-freq" style="display:none;"></div>
 
   <div class="list-toolbar">
     <select class="sort-select" id="ht-sort-select">
@@ -269,7 +276,7 @@
   </div>
   <div id="ht-habits-list"></div>
 
-  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v6 · синхронізовано з Google Sheets</div>
+  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v7 · синхронізовано з Google Sheets</div>
 </div>
 
 <script>
@@ -374,6 +381,10 @@
   let selectedIds = new Set();
   let bulkDeleteArmed = false;
   let bulkDeleteArmTimer = null;
+  let bulkFreqOpen = false;  // відкрито панель «Частота для вибраних звичок»
+  let bulkFreqCustom = false;
+  let selectFlash = '';      // короткий підсумок замість лічильника після дії
+  let selectFlashTimer = null;
 
   function seedDefaults(){
     const today = todayStr();
@@ -782,6 +793,12 @@
       selBody.appendChild(selText);
       const selMeta = document.createElement('div'); selMeta.className = 'habit-meta-row';
       const selLast = document.createElement('span'); selLast.textContent = lastDoneLabel(id);
+      const selEvery = everyDaysOf(h);
+      if (selEvery){
+        const sf = document.createElement('span'); sf.className = 'chip freq-chip'; sf.style.cursor = 'inherit';
+        sf.textContent = selEvery === 1 ? '🔁 щодня' : '🔁 раз на ' + selEvery + ' дн.';
+        selMeta.appendChild(sf);
+      }
       selMeta.appendChild(selLast);
       const selTotal = document.createElement('span'); selTotal.textContent = totalCount(id) + 'x всього';
       selMeta.appendChild(selTotal);
@@ -962,7 +979,7 @@
 
   function setBulkAddOpen(open){
     bulkAddOpen = open;
-    if (open){ selectMode = false; disarmBulkDelete(); selectedIds.clear(); }
+    if (open){ selectMode = false; bulkFreqOpen = false; bulkFreqCustom = false; disarmBulkDelete(); selectedIds.clear(); }
     render();
     if (open){
       const ta = document.getElementById('ht-bulk-add-textarea');
@@ -993,6 +1010,7 @@
   function setSelectMode(on){
     selectMode = on;
     freqPickerId = null;
+    bulkFreqOpen = false; bulkFreqCustom = false; selectFlash = '';
     disarmBulkDelete();
     if (on){ bulkAddOpen = false; editingId = null; confirmDeleteId = null; }
     else selectedIds.clear();
@@ -1029,6 +1047,73 @@
     persist(); render();
   }
 
+  // --- Частота для вибраних звичок ---
+  // Панель будується заново лише при зміні стану (відкрито / «інше…»), а не на кожен
+  // дотик по звичці: інакше скидалось би число, яке вводять у полі «інше…».
+  function applyFreqToSelected(n){
+    let count = 0;
+    habits.forEach(h => {
+      if (!selectedIds.has(h.id)) return;
+      if (n) h.everyDays = n; else delete h.everyDays;
+      count++;
+    });
+    if (!count) return;
+    selectedIds.clear();
+    bulkFreqCustom = false;
+    disarmBulkDelete();
+    selectFlash = n ? 'Частоту задано: ' + count : 'Частоту прибрано: ' + count;
+    if (selectFlashTimer) clearTimeout(selectFlashTimer);
+    selectFlashTimer = setTimeout(() => { selectFlash = ''; selectFlashTimer = null; renderSelectBar(); }, 2500);
+    persist(); render();
+  }
+  function renderBulkFreq(){
+    const panel = document.getElementById('ht-select-freq');
+    const btn = document.getElementById('ht-select-freq-btn');
+    if (btn) btn.classList.toggle('on', selectMode && bulkFreqOpen);
+    if (!panel) return;
+    if (!selectMode || !bulkFreqOpen){ panel.style.display = 'none'; panel.dataset.key = ''; return; }
+    panel.style.display = 'block';
+    const key = bulkFreqCustom ? 'custom' : 'presets';
+    if (panel.dataset.key !== key){
+      panel.dataset.key = key;
+      panel.innerHTML = '';
+      const title = document.createElement('div'); title.className = 'select-freq-title'; title.textContent = 'Частота для вибраних звичок';
+      panel.appendChild(title);
+      const box = document.createElement('div'); box.className = 'freq-picker'; box.style.marginTop = '0';
+      const opt = (label, cls, needsSel, onclick) => {
+        const b = document.createElement('button'); b.type = 'button';
+        b.className = 'freq-opt' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = onclick;
+        if (needsSel) b.setAttribute('data-needs-selection', '1');
+        return b;
+      };
+      FREQ_PRESETS.forEach(pr => box.appendChild(opt(pr[1], '', true, () => applyFreqToSelected(pr[0]))));
+      box.appendChild(opt('інше…', bulkFreqCustom ? 'on' : '', false, () => { bulkFreqCustom = !bulkFreqCustom; renderBulkFreq(); }));
+      box.appendChild(opt('без частоти', 'clear', true, () => applyFreqToSelected(null)));
+      if (bulkFreqCustom){
+        const row = document.createElement('div'); row.className = 'freq-custom';
+        const lbl = document.createElement('span'); lbl.textContent = 'раз на';
+        const inp = document.createElement('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.pattern = '[0-9]*'; inp.maxLength = 3;
+        inp.className = 'habit-days-input'; inp.placeholder = '5'; inp.setAttribute('aria-label', 'Скільки днів');
+        const unit = document.createElement('span'); unit.textContent = 'днів';
+        const apply = () => {
+          const raw = inp.value.trim(); const n = Number(raw);
+          if (!/^\d{1,3}$/.test(raw) || n < 1 || n > 365){ inp.classList.add('invalid'); inp.focus(); return; }
+          applyFreqToSelected(n);
+        };
+        inp.addEventListener('input', () => inp.classList.remove('invalid'));
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); });
+        const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'ghost-btn'; ok.textContent = 'Зберегти'; ok.onclick = apply;
+        ok.setAttribute('data-needs-selection', '1');
+        row.appendChild(lbl); row.appendChild(inp); row.appendChild(unit); row.appendChild(ok);
+        box.appendChild(row);
+        setTimeout(() => inp.focus(), 0);
+      }
+      panel.appendChild(box);
+    }
+    const none = !selectedIds.size;
+    panel.querySelectorAll('[data-needs-selection]').forEach(b => { b.disabled = none; });
+  }
+
   function renderSelectBar(){
     const bar = document.getElementById('ht-select-bar');
     const toggle = document.getElementById('ht-select-mode-toggle');
@@ -1040,12 +1125,14 @@
     }
     if (!bar) return;
     bar.style.display = selectMode ? 'flex' : 'none';
+    renderBulkFreq();
     if (!selectMode) return;
     const n = selectedIds.size;
     // Підписи навмисно короткі й однорядкові — див. коментар до .select-bar-count.
     const countEl = document.getElementById('ht-select-count');
     if (countEl){
       if (bulkDeleteArmed) countEl.textContent = 'Натисни ще раз, щоб видалити';
+      else if (selectFlash) countEl.textContent = selectFlash;
       else countEl.textContent = n ? ('Вибрано: ' + n) : 'Нічого не вибрано';
     }
     const allBtn = document.getElementById('ht-select-all');
@@ -1053,7 +1140,7 @@
     const delBtn = document.getElementById('ht-bulk-delete');
     if (delBtn){
       delBtn.disabled = !n;
-      delBtn.textContent = bulkDeleteArmed ? ('Точно? (' + n + ')') : ('Видалити' + (n ? ' (' + n + ')' : ''));
+      delBtn.textContent = bulkDeleteArmed ? 'Точно?' : 'Видалити';
     }
   }
 
@@ -1137,6 +1224,7 @@
   if ($('ht-select-mode-toggle')) $('ht-select-mode-toggle').onclick = () => setSelectMode(!selectMode);
   if ($('ht-select-cancel')) $('ht-select-cancel').onclick = () => setSelectMode(false);
   if ($('ht-select-all')) $('ht-select-all').onclick = toggleSelectAll;
+  if ($('ht-select-freq-btn')) $('ht-select-freq-btn').onclick = () => { bulkFreqOpen = !bulkFreqOpen; bulkFreqCustom = false; render(); };
   if ($('ht-bulk-delete')) $('ht-bulk-delete').onclick = () => {
     if (!selectedIds.size) return;
     if (!bulkDeleteArmed){
