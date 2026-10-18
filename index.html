@@ -383,6 +383,24 @@
     el.style.color = isError ? '#D85A30' : 'var(--text-muted)';
   }
 
+  // Таблиця перетворює дату на Date, і скрипт віддає її рядком на кшталт
+  // «Sat Oct 10 2026 00:00:00 GMT+0300 (за східноєвропейським літнім часом)».
+  // Усередині працюємо лише з «YYYY-MM-DD», тож приводимо дату до цього вигляду.
+  const MONTH_NUM = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
+  function normalizeDateStr(v){
+    const s = String(v == null ? '' : v).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const iso = /^(\d{4}-\d{2}-\d{2})T/.exec(s);
+    if (iso) return iso[1];
+    const m = /^[A-Za-z]{3} ([A-Za-z]{3}) (\d{1,2}) (\d{4})/.exec(s);
+    if (m && MONTH_NUM[m[1]]) return m[3] + '-' + pad(MONTH_NUM[m[1]]) + '-' + pad(Number(m[2]));
+    return s; // невідомий формат — лишаємо як є, daysSince його просто проігнорує
+  }
+  function normalizeHabit(h){
+    if (h && h.createdAt) h.createdAt = normalizeDateStr(h.createdAt);
+    return h;
+  }
+
   // --- Google Sheet persistence (fetch to Apps Script Web App) ---
   async function persist(){
     showSaveStatus('Збереження в Google Таблицю…');
@@ -404,7 +422,7 @@
       const res = await fetch(SHEET_API_URL, { method: 'GET' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const parsed = await res.json();
-      habits = Array.isArray(parsed.habits) ? parsed.habits : [];
+      habits = Array.isArray(parsed.habits) ? parsed.habits.map(normalizeHabit) : [];
       logs = (parsed.logs && typeof parsed.logs === 'object') ? parsed.logs : {};
       wheelQueue = Array.isArray(parsed.queue) ? parsed.queue.filter(id => habits.some(h => h.id === id)) : [];
       if (!habits.length){
@@ -438,7 +456,8 @@
     if (!dateStr) return null;
     const d0 = new Date(dateStr + 'T00:00:00');
     const d1 = new Date(todayStr() + 'T00:00:00');
-    return Math.round((d1 - d0) / 86400000);
+    const r = Math.round((d1 - d0) / 86400000);
+    return isNaN(r) ? null : r;
   }
   function lastDoneLabel(id){
     const last = lastDoneDate(id);
