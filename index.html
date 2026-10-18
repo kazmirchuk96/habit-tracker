@@ -113,11 +113,16 @@
 #habit-tracker-root .habit-edit-row { display: flex; gap: 8px; align-items: center; }
 #habit-tracker-root .habit-edit-input { flex: 1; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 9px 10px; background: var(--surface-1); color: var(--text-primary); font-size: 13.5px; font-family: inherit; min-width: 0; }
 #habit-tracker-root .habit-edit-input:focus { outline: none; border-color: #1D9E75; }
-#habit-tracker-root .habit-days-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 12.5px; color: var(--text-secondary); }
-#habit-tracker-root .habit-days-input { width: 64px; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 8px 6px; background: var(--surface-1); color: var(--text-primary); font-size: 13.5px; font-family: inherit; text-align: center; }
+#habit-tracker-root .freq-chip.empty { background: transparent; border: 0.5px dashed var(--border-strong); color: var(--text-muted); }
+#habit-tracker-root .freq-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+#habit-tracker-root .freq-opt { border: 0.5px solid var(--border-strong); border-radius: 999px; padding: 9px 14px; background: var(--surface-1); color: var(--text-primary); font-size: 13px; font-family: inherit; cursor: pointer; }
+#habit-tracker-root .freq-opt:hover { background: var(--surface-0); }
+#habit-tracker-root .freq-opt.on { background: rgba(144,137,224,0.2); color: #B5AFF0; border-color: transparent; }
+#habit-tracker-root .freq-opt.clear { color: #F0937A; }
+#habit-tracker-root .freq-custom { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+#habit-tracker-root .habit-days-input { width: 72px; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 10px 6px; background: var(--surface-1); color: var(--text-primary); font-size: 13.5px; font-family: inherit; text-align: center; }
 #habit-tracker-root .habit-days-input:focus { outline: none; border-color: #1D9E75; }
 #habit-tracker-root .habit-days-input.invalid { border-color: #F0937A; }
-#habit-tracker-root .habit-days-hint { flex-basis: 100%; font-size: 11px; color: var(--text-muted); line-height: 1.4; }
 #habit-tracker-root .habit-confirm-msg { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
 
 /* --- Масові операції: додавання списком і вибір кількох звичок --- */
@@ -264,7 +269,7 @@
   </div>
   <div id="ht-habits-list"></div>
 
-  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v5 · синхронізовано з Google Sheets</div>
+  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v6 · синхронізовано з Google Sheets</div>
 </div>
 
 <script>
@@ -359,7 +364,8 @@
   let isSpinning = false;
   let lastPickedId = null;
   let editingId = null;
-  let editFocusDays = false; // true → при відкритті редагування фокус іде в поле «раз на N днів»
+  let freqPickerId = null; // id звички, під якою відкрито швидкий вибір частоти
+  let freqCustom = false;  // true → у цьому виборі показано поле «інше число днів»
   let confirmDeleteId = null;
   let resetArmed = false;
   let resetArmTimer = null;
@@ -711,6 +717,51 @@
     return arr;
   }
 
+  // --- Швидкий вибір частоти (під рядком звички) ---
+  const FREQ_PRESETS = [[1, 'щодня'], [3, 'раз на 3 дні'], [7, 'раз на тиждень'], [14, 'раз на 2 тижні'], [30, 'раз на місяць']];
+  function setEveryDays(id, n){
+    const h = habits.find(x => x.id === id);
+    if (!h) return;
+    if (n) h.everyDays = n; else delete h.everyDays;
+    freqPickerId = null; freqCustom = false;
+    persist(); render();
+  }
+  function buildFreqPicker(h){
+    const cur = everyDaysOf(h);
+    const box = document.createElement('div'); box.className = 'freq-picker';
+    const opt = (label, cls, onclick) => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.className = 'freq-opt' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = onclick;
+      return b;
+    };
+    FREQ_PRESETS.forEach(pr => box.appendChild(opt(pr[1], cur === pr[0] ? 'on' : '', () => setEveryDays(h.id, pr[0]))));
+    const customCur = cur && !FREQ_PRESETS.some(pr => pr[0] === cur);
+    box.appendChild(opt(customCur ? 'раз на ' + cur + ' дн.' : 'інше…', (customCur || freqCustom) ? 'on' : '', () => { freqCustom = !freqCustom; render(); }));
+    if (cur) box.appendChild(opt('без частоти', 'clear', () => setEveryDays(h.id, null)));
+    if (freqCustom){
+      const row = document.createElement('div'); row.className = 'freq-custom';
+      const lbl = document.createElement('span'); lbl.textContent = 'раз на';
+      // inputmode=numeric — на телефоні цифрова клавіатура; кнопки «Готово» на ній немає,
+      // тому поруч є явна кнопка «Зберегти».
+      const inp = document.createElement('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.pattern = '[0-9]*'; inp.maxLength = 3;
+      inp.className = 'habit-days-input'; inp.placeholder = '5'; inp.setAttribute('aria-label', 'Скільки днів');
+      if (cur) inp.value = String(cur);
+      const unit = document.createElement('span'); unit.textContent = 'днів';
+      const apply = () => {
+        const raw = inp.value.trim(); const n = Number(raw);
+        if (!/^\d{1,3}$/.test(raw) || n < 1 || n > 365){ inp.classList.add('invalid'); inp.focus(); return; }
+        setEveryDays(h.id, n);
+      };
+      inp.addEventListener('input', () => inp.classList.remove('invalid'));
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); if (e.key === 'Escape'){ freqCustom = false; render(); } });
+      const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'ghost-btn'; ok.textContent = 'Зберегти'; ok.onclick = apply;
+      row.appendChild(lbl); row.appendChild(inp); row.appendChild(unit); row.appendChild(ok);
+      box.appendChild(row);
+      setTimeout(() => { inp.focus(); inp.select(); }, 0);
+    }
+    return box;
+  }
+
   function buildHabitRow(h){
     const id = h.id;
     const color = colorFor(id);
@@ -747,41 +798,15 @@
     if (editingId === id){
       const editRow = document.createElement('div'); editRow.className = 'habit-edit-row';
       const input = document.createElement('input'); input.type = 'text'; input.className = 'habit-edit-input'; input.value = h.text;
-      const daysRow = document.createElement('div'); daysRow.className = 'habit-days-row';
-      const daysLbl = document.createElement('span'); daysLbl.textContent = 'Робити раз на';
-      const daysInput = document.createElement('input'); daysInput.type = 'number'; daysInput.className = 'habit-days-input';
-      daysInput.min = '1'; daysInput.max = '365'; daysInput.step = '1'; daysInput.placeholder = '—';
-      daysInput.setAttribute('aria-label', 'Робити раз на скільки днів');
-      const curEvery = everyDaysOf(h); daysInput.value = curEvery ? String(curEvery) : '';
-      const daysUnit = document.createElement('span'); daysUnit.textContent = 'днів';
-      const daysHint = document.createElement('span'); daysHint.className = 'habit-days-hint';
-      daysHint.textContent = 'Порожньо — без частоти. Коли минуло стільки днів, звичка випадає в барабані першою.';
-      daysRow.appendChild(daysLbl); daysRow.appendChild(daysInput); daysRow.appendChild(daysUnit); daysRow.appendChild(daysHint);
-      const save = () => {
-        const v = input.value.trim();
-        const raw = daysInput.value.trim();
-        let every = null;
-        if (raw !== ''){
-          const n = Number(raw);
-          if (!Number.isInteger(n) || n < 1 || n > 365){ daysInput.classList.add('invalid'); daysInput.focus(); return; }
-          every = n;
-        }
-        if (v) h.text = v;
-        if (every) h.everyDays = every; else delete h.everyDays;
-        editingId = null; persist(); render();
-      };
+      const save = () => { const v = input.value.trim(); if (v) h.text = v; editingId = null; persist(); render(); };
       const cancel = () => { editingId = null; render(); };
-      const onKey = (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); };
-      input.addEventListener('keydown', onKey);
-      daysInput.addEventListener('keydown', onKey);
-      daysInput.addEventListener('input', () => daysInput.classList.remove('invalid'));
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); });
       const saveBtn = document.createElement('button'); saveBtn.type = 'button'; saveBtn.className = 'icon-btn'; saveBtn.title = 'Зберегти'; saveBtn.innerHTML = icon('check', 16); saveBtn.onclick = save;
       const cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'icon-btn'; cancelBtn.title = 'Скасувати'; cancelBtn.innerHTML = icon('x', 15); cancelBtn.onclick = cancel;
       editRow.appendChild(input); editRow.appendChild(saveBtn); editRow.appendChild(cancelBtn);
       body.appendChild(editRow);
-      body.appendChild(daysRow);
       row.appendChild(body);
-      setTimeout(() => { const f = editFocusDays ? daysInput : input; editFocusDays = false; f.focus(); f.select(); }, 0);
+      setTimeout(() => { input.focus(); input.select(); }, 0);
       return row;
     }
 
@@ -815,9 +840,9 @@
     doneBtn.innerHTML = icon('check', 16);
     doneBtn.onclick = () => { toggleDoneToday(id); persist(); render(); };
     const editBtn = document.createElement('button'); editBtn.type = 'button'; editBtn.className = 'icon-btn'; editBtn.title = 'Редагувати'; editBtn.innerHTML = icon('edit', 15);
-    editBtn.onclick = () => { editingId = id; confirmDeleteId = null; render(); };
+    editBtn.onclick = () => { editingId = id; confirmDeleteId = null; freqPickerId = null; render(); };
     const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'icon-btn'; delBtn.title = 'Видалити'; delBtn.innerHTML = icon('trash', 15);
-    delBtn.onclick = () => { confirmDeleteId = id; editingId = null; render(); };
+    delBtn.onclick = () => { confirmDeleteId = id; editingId = null; freqPickerId = null; render(); };
     actions.appendChild(doneBtn); actions.appendChild(editBtn); actions.appendChild(delBtn);
     top.appendChild(actions);
     body.appendChild(top);
@@ -836,12 +861,12 @@
       meta.appendChild(dc);
     }
     const every = everyDaysOf(h);
-    if (every){
-      const fc = document.createElement('span'); fc.className = 'chip freq-chip'; fc.title = 'Змінити частоту';
-      fc.textContent = every === 1 ? '🔁 щодня' : '🔁 раз на ' + every + ' дн.';
-      fc.onclick = () => { editingId = id; editFocusDays = true; confirmDeleteId = null; render(); };
-      meta.appendChild(fc);
-    }
+    const fc = document.createElement('span');
+    fc.className = 'chip freq-chip' + (every ? '' : ' empty');
+    fc.title = 'Як часто робити';
+    fc.textContent = every ? (every === 1 ? '🔁 щодня' : '🔁 раз на ' + every + ' дн.') : '🔁 частота';
+    fc.onclick = () => { freqPickerId = (freqPickerId === id) ? null : id; freqCustom = false; render(); };
+    meta.appendChild(fc);
     const lastSpan = document.createElement('span');
     lastSpan.textContent = lastDoneLabel(id);
     meta.appendChild(lastSpan);
@@ -853,6 +878,7 @@
     wheelChip.onclick = () => { h.wheel = (h.wheel === false) ? true : false; persist(); render(); };
     meta.appendChild(wheelChip);
     body.appendChild(meta);
+    if (freqPickerId === id) body.appendChild(buildFreqPicker(h));
 
     row.appendChild(body);
     return row;
@@ -966,6 +992,7 @@
 
   function setSelectMode(on){
     selectMode = on;
+    freqPickerId = null;
     disarmBulkDelete();
     if (on){ bulkAddOpen = false; editingId = null; confirmDeleteId = null; }
     else selectedIds.clear();
