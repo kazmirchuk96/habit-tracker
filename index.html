@@ -832,7 +832,7 @@
     const due = dueInfo(h);
     if (due){
       const dc = document.createElement('span'); dc.className = 'chip due-chip';
-      dc.textContent = due.late > 0 ? '⏰ прострочено на ' + due.late + ' дн.' : '⏰ пора';
+      dc.textContent = '⏰ пора'; // без «прострочено»: частоту могли вказати щойно, жодного правила ще не порушено
       meta.appendChild(dc);
     }
     const every = everyDaysOf(h);
