@@ -2,6 +2,8 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Звички — Колесо фортуни</title>
 <style>
@@ -44,6 +46,18 @@
 #habit-tracker-root .menu-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 13px; border-radius: 8px; cursor: pointer; color: var(--text-primary); background: none; border: none; width: 100%; text-align: left; font-family: inherit; }
 #habit-tracker-root .menu-item:hover { background: var(--surface-1); }
 #habit-tracker-root .menu-item.danger { color: #F0937A; }
+#habit-tracker-root .sync-banner { display: flex; align-items: center; gap: 8px; margin: -0.75rem 0 1.25rem; padding: 9px 12px; border-radius: 12px; background: var(--surface-1); border: 0.5px solid var(--border-strong); font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+#habit-tracker-root .sync-banner.error { color: #F0937A; border-color: rgba(240,147,122,0.5); }
+#habit-tracker-root .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #2FBE93; flex-shrink: 0; animation: ht-pulse 1s ease-in-out infinite; }
+#habit-tracker-root .sync-banner.error .sync-dot { background: #F0937A; animation: none; }
+@keyframes ht-pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #habit-tracker-root .sync-dot { animation: none; } }
+/* Поки свіжі дані не отримано, показана копія — лише для перегляду: усе, крім меню, не реагує на дотики. */
+#habit-tracker-root.ht-stale button, #habit-tracker-root.ht-stale input, #habit-tracker-root.ht-stale select,
+#habit-tracker-root.ht-stale textarea, #habit-tracker-root.ht-stale .habit-item, #habit-tracker-root.ht-stale .toggle-switch,
+#habit-tracker-root.ht-stale .chip { pointer-events: none; }
+#habit-tracker-root.ht-stale .menu-wrap, #habit-tracker-root.ht-stale .menu-wrap * { pointer-events: auto; }
+#habit-tracker-root.ht-stale #ht-habits-list, #habit-tracker-root.ht-stale .hero-card { opacity: 0.7; }
 #habit-tracker-root .save-status { font-size: 11px; color: var(--text-muted); }
 
 #habit-tracker-root .wheel-controls-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; flex-wrap: wrap; gap: 8px; }
@@ -204,6 +218,8 @@
     </div>
   </div>
 
+  <div class="sync-banner" id="ht-sync-banner"><span class="sync-dot"></span><span class="sync-banner-text">Завантажуємо з Таблиці…</span></div>
+
   <div id="ht-overview-cards" style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:1.5rem;"></div>
 
   <div class="hero-card" style="margin-bottom:1.5rem;">
@@ -225,7 +241,7 @@
       </div>
       <div class="empty-state roulette-empty" id="ht-wheel-empty" style="display:none; position:absolute; inset:0; padding:0 1rem;"></div>
     </div>
-    <button type="button" class="spin-btn" id="ht-spin-btn">🎰 Крутити барабан</button>
+    <button type="button" class="spin-btn" id="ht-spin-btn" disabled>🎰 Крутити барабан</button>
     <div id="ht-wheel-result"></div>
 
     <div class="queue-section">
@@ -274,9 +290,9 @@
       <option value="alpha">За назвою (А-Я)</option>
     </select>
   </div>
-  <div id="ht-habits-list"></div>
+  <div id="ht-habits-list"><div class="empty-state">Завантажуємо звички з Таблиці…</div></div>
 
-  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v7 · синхронізовано з Google Sheets</div>
+  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v8 · синхронізовано з Google Sheets</div>
 </div>
 
 <script>
@@ -369,6 +385,8 @@
   let sortMode = 'default';
   let hideDoneToday = true;
   let isSpinning = false;
+  let staleMode = false;   // true → показано копію або нічого; запис у Таблицю заборонено
+  let loadedOnce = false;  // чи вдалося хоч раз отримати дані з Таблиці в цій сесії
   let lastPickedId = null;
   let editingId = null;
   let freqPickerId = null; // id звички, під якою відкрито швидкий вибір частоти
@@ -419,7 +437,35 @@
   }
 
   // --- Google Sheet persistence (fetch to Apps Script Web App) ---
+  // --- Локальна копія для миттєвого показу ---
+  // Скрипт відповідає 2–3+ с, тож без копії при відкритті видно порожній екран. Копія
+  // потрібна лише для показу: поки свіжі дані не отримано (staleMode), запис у Таблицю
+  // заборонений, інакше застарілий стан перезаписав би новіший з іншого пристрою.
+  const CACHE_KEY = 'ht-state-v1';
+  function readCache(){
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY));
+      if (c && Array.isArray(c.habits) && c.habits.length) return c;
+    } catch(e){}
+    return null;
+  }
+  function writeCache(){
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ habits: habits, logs: logs, queue: wheelQueue })); } catch(e){}
+  }
+  function setStale(on, text, isError){
+    staleMode = on;
+    const root = document.getElementById('habit-tracker-root');
+    if (root) root.classList.toggle('ht-stale', on);
+    const b = document.getElementById('ht-sync-banner');
+    if (!b) return;
+    b.style.display = on ? 'flex' : 'none';
+    b.classList.toggle('error', !!isError);
+    const t = b.querySelector('.sync-banner-text');
+    if (t) t.textContent = text || '';
+  }
+
   async function persist(){
+    if (staleMode){ showSaveStatus('Дочекайся завантаження з Таблиці — запис поки заборонено', true); return; }
     showSaveStatus('Збереження в Google Таблицю…');
     try {
       const res = await fetch(SHEET_API_URL, {
@@ -427,6 +473,7 @@
         body: JSON.stringify({ habits: habits, logs: logs, queue: wheelQueue })
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
+      writeCache();
       showSaveStatus('Синхронізовано з Google Таблицею ✓');
     } catch(e){
       showSaveStatus('Помилка синхронізації з Таблицею', true);
@@ -439,17 +486,35 @@
       const res = await fetch(SHEET_API_URL, { method: 'GET' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const parsed = await res.json();
-      habits = Array.isArray(parsed.habits) ? parsed.habits.map(normalizeHabit) : [];
+      const fresh = Array.isArray(parsed.habits) ? parsed.habits.map(normalizeHabit) : [];
+      // Є копія зі звичками, а Таблиця раптом віддала порожній список — це схоже на збій,
+      // а не на «усе видалено»; не засіваємо типовий набір і нічого не перезаписуємо.
+      if (!fresh.length && habits.length && !loadedOnce) throw new Error('empty-server');
+      habits = fresh;
       logs = (parsed.logs && typeof parsed.logs === 'object') ? parsed.logs : {};
       wheelQueue = Array.isArray(parsed.queue) ? parsed.queue.filter(id => habits.some(h => h.id === id)) : [];
+      loadedOnce = true;
+      setStale(false);
       if (!habits.length){
         seedDefaults();
         await persist();
       } else {
         showSaveStatus('Синхронізовано з Google Таблицею ✓');
       }
+      writeCache();
     } catch(e){
-      showSaveStatus('Не вдалось звʼязатися з Google Таблицею — перевір SHEET_API_URL', true);
+      const emptyServer = e && e.message === 'empty-server';
+      showSaveStatus(emptyServer ? 'Таблиця повернула порожній список — дані не змінено' : 'Не вдалось звʼязатися з Google Таблицею — перевір SHEET_API_URL', true);
+      if (!loadedOnce){
+        // Жодного разу не завантажили: лишаємо режим «лише перегляд», щоб порожній стан
+        // не перезаписав Таблицю при першій же дії.
+        setStale(true, (emptyServer ? 'Таблиця повернула порожній список — дані не змінено.' : 'Не вдалося завантажити з Таблиці.') + ' Меню ⋯ → «Оновити з Таблиці».', true);
+        if (!habits.length){
+          const list = document.getElementById('ht-habits-list');
+          if (list) list.innerHTML = '<div class="empty-state">Не вдалося завантажити звички. Відкрий меню ⋯ → «Оновити з Таблиці».</div>';
+          return;
+        }
+      }
     }
     render();
   }
@@ -1237,6 +1302,15 @@
   };
   if ($('ht-sort-select')) $('ht-sort-select').onchange = (e) => { sortMode = e.target.value; renderHabitsList(); };
 
+  // Спочатку одразу показуємо збережену копію (якщо є), потім у фоні беремо свіжі дані.
+  const cached = readCache();
+  if (cached){
+    habits = cached.habits.map(normalizeHabit);
+    logs = (cached.logs && typeof cached.logs === 'object') ? cached.logs : {};
+    wheelQueue = Array.isArray(cached.queue) ? cached.queue.filter(id => habits.some(h => h.id === id)) : [];
+    render();
+  }
+  setStale(true, 'Оновлюємо з Таблиці…');
   loadState();
 })();
 </script>
