@@ -11,7 +11,6 @@
   body { padding: 24px 16px; box-sizing: border-box; width: 100%; }
 </style>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap');
 #habit-tracker-root {
   --surface-0: #0F0E0A;
   --surface-1: #1C1B15;
@@ -21,7 +20,7 @@
   --text-primary: #F3F1E8;
   --text-secondary: #B7B4A6;
   --text-muted: #8C8977;
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: var(--text-primary);
   max-width: 720px;
   width: 100%;
@@ -31,10 +30,10 @@
   border-radius: 20px;
   box-sizing: border-box;
 }
-#habit-tracker-root h1 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.01em; }
-#habit-tracker-root .section-label { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; margin-bottom: 12px; }
+#habit-tracker-root h1 { font-weight: 700; letter-spacing: -0.02em; }
+#habit-tracker-root .section-label { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
 #habit-tracker-root .card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 20px; padding: 1.25rem 1.4rem; }
-#habit-tracker-root .hero-num { font-family: 'Fraunces', serif; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+#habit-tracker-root .hero-num { font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 #habit-tracker-root .hero-card { border-radius: 22px; padding: 1.5rem 1.6rem; background: var(--surface-2); border: 1px solid var(--border-strong); }
 #habit-tracker-root .icon-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; flex-shrink: 0; }
 #habit-tracker-root .icon-btn:hover { background: var(--surface-0); color: var(--text-primary); }
@@ -84,7 +83,7 @@
 #habit-tracker-root .reel-fade.right { right: 0; background: linear-gradient(270deg, var(--surface-1), transparent); }
 #habit-tracker-root .roulette-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 #habit-tracker-root .reel-box .roulette-empty { display: flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; font-size: 12.5px; }
-#habit-tracker-root .spin-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; margin-top: 4px; background: linear-gradient(135deg, #2FBE93, #1D9E75); color: #0F0E0A; font-weight: 600; font-size: 14.5px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; font-family: inherit; }
+#habit-tracker-root .spin-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; margin-top: 4px; background: #2FBE93; color: #0F0E0A; font-weight: 600; font-size: 14.5px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; font-family: inherit; }
 #habit-tracker-root .spin-btn:hover:not(:disabled) { transform: translateY(-1px); }
 #habit-tracker-root .spin-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 #habit-tracker-root .spin-secondary-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0.5px solid var(--border-strong); border-radius: 10px; padding: 9px; background: var(--surface-2); color: var(--text-primary); font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s; }
@@ -201,7 +200,7 @@
       </svg>
       <div>
         <h1 style="margin: 0 0 4px; font-size: 24px;">Звички</h1>
-        <p style="color: var(--text-secondary); font-size: 12.5px; margin: 0;">колесо фортуни для щоденних справ · синхронізовано з Google Таблицею</p>
+        <p style="color: var(--text-secondary); font-size: 12.5px; margin: 0;">Щоденні справи</p>
       </div>
     </div>
     <div class="menu-wrap">
@@ -223,7 +222,7 @@
   <div id="ht-overview-cards" style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:1.5rem;"></div>
 
   <div class="hero-card" style="margin-bottom:1.5rem;">
-    <div class="section-label" style="margin-bottom:10px;">🎰 Барабан звичок</div>
+    <div class="section-label" style="margin-bottom:10px;">Барабан звичок</div>
     <div class="wheel-controls-row">
       <span id="ht-wheel-count-label">—</span>
       <label class="toggle-switch" id="ht-hide-done-toggle">
@@ -241,7 +240,7 @@
       </div>
       <div class="empty-state roulette-empty" id="ht-wheel-empty" style="display:none; position:absolute; inset:0; padding:0 1rem;"></div>
     </div>
-    <button type="button" class="spin-btn" id="ht-spin-btn" disabled>🎰 Крутити барабан</button>
+    <button type="button" class="spin-btn" id="ht-spin-btn" disabled>Крутити барабан</button>
     <div id="ht-wheel-result"></div>
 
     <div class="queue-section">
@@ -292,7 +291,7 @@
   </div>
   <div id="ht-habits-list"><div class="empty-state">Завантажуємо звички з Таблиці…</div></div>
 
-  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v9 · синхронізовано з Google Sheets</div>
+  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v10</div>
 </div>
 
 <script>
@@ -654,7 +653,7 @@
     if (label){
       const dueCount = candidates.filter(h => dueInfo(h)).length;
       label.textContent = candidates.length + ' ' + pluralUk(candidates.length, 'звичка', 'звички', 'звичок') + ' у барабані' +
-        (dueCount ? ' · ⏰ ' + dueCount + ' ' + pluralUk(dueCount, 'пріоритетна', 'пріоритетні', 'пріоритетних') : '');
+        (dueCount ? ' · ' + dueCount + ' ' + pluralUk(dueCount, 'пріоритетна', 'пріоритетні', 'пріоритетних') : '');
     }
     const box = document.getElementById('ht-reel-box');
     const idleEl = document.getElementById('ht-reel-idle');
@@ -744,7 +743,7 @@
     if (wheelQueue.indexOf(h.id) === -1) wheelQueue.push(h.id);
     const box = document.getElementById('ht-wheel-result');
     if (box){
-      box.innerHTML = '<div style="text-align:center; font-size:12.5px; color:var(--text-secondary); margin-top:12px;">Випало: <strong style="color:var(--text-primary); font-weight:600;">' + escapeHtml(h.text) + '</strong>' + (dueInfo(h) ? ' · ⏰ пора за частотою' : '') + ' · додано в чергу нижче</div>';
+      box.innerHTML = '<div style="text-align:center; font-size:12.5px; color:var(--text-secondary); margin-top:12px;">Випало: <strong style="color:var(--text-primary); font-weight:600;">' + escapeHtml(h.text) + '</strong>' + (dueInfo(h) ? ' · пора за частотою' : '') + ' · додано в чергу нижче</div>';
     }
     persist();
     render();
@@ -868,7 +867,7 @@
       const selEvery = everyDaysOf(h);
       if (selEvery){
         const sf = document.createElement('span'); sf.className = 'chip freq-chip'; sf.style.cursor = 'inherit';
-        sf.textContent = selEvery === 1 ? '🔁 щодня' : '🔁 раз на ' + selEvery + ' дн.';
+        sf.textContent = selEvery === 1 ? 'щодня' : 'раз на ' + selEvery + ' дн.';
         selMeta.appendChild(sf);
       }
       selMeta.appendChild(selLast);
@@ -940,20 +939,20 @@
     const streak = currentStreak(id);
     if (streak > 0){
       const sc = document.createElement('span'); sc.className = 'chip streak-chip';
-      sc.textContent = '🔥 ' + streak + ' ' + pluralUk(streak, 'день', 'дні', 'днів');
+      sc.textContent = streak + ' ' + pluralUk(streak, 'день', 'дні', 'днів') + ' поспіль';
       meta.appendChild(sc);
     }
     const due = dueInfo(h);
     if (due){
       const dc = document.createElement('span'); dc.className = 'chip due-chip';
-      dc.textContent = '⏰ пора'; // без «прострочено»: частоту могли вказати щойно, жодного правила ще не порушено
+      dc.textContent = 'пора'; // без «прострочено»: частоту могли вказати щойно, жодного правила ще не порушено
       meta.appendChild(dc);
     }
     const every = everyDaysOf(h);
     const fc = document.createElement('span');
     fc.className = 'chip freq-chip' + (every ? '' : ' empty');
     fc.title = 'Як часто робити';
-    fc.textContent = every ? (every === 1 ? '🔁 щодня' : '🔁 раз на ' + every + ' дн.') : '🔁 частота';
+    fc.textContent = every ? (every === 1 ? 'щодня' : 'раз на ' + every + ' дн.') : 'частота';
     fc.onclick = () => { freqPickerId = (freqPickerId === id) ? null : id; freqCustom = false; render(); };
     meta.appendChild(fc);
     const lastSpan = document.createElement('span');
