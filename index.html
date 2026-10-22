@@ -292,7 +292,7 @@
   </div>
   <div id="ht-habits-list"><div class="empty-state">Завантажуємо звички з Таблиці…</div></div>
 
-  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v8 · синхронізовано з Google Sheets</div>
+  <div style="text-align:center; font-size:10px; color:var(--text-muted); opacity:0.5; margin-top:1.5rem;">build v9 · синхронізовано з Google Sheets</div>
 </div>
 
 <script>
@@ -630,8 +630,15 @@
   }
 
   // --- Slot reel (replaces the circular wheel) ---
+  // Чи може звичка взагалі випасти (без урахування черги): у колесі й не прихована як виконана.
+  function isWheelEligible(h){
+    return h.wheel !== false && !(hideDoneToday && isDoneToday(h.id));
+  }
+  // Кандидати барабана. Звичка, що вже в черзі «Обрано зараз», з барабана виходить: черга
+  // — це список на виконання, і щоб набрати, скажімо, 10 різних справ, жодна не має
+  // випадати вдруге. Повертається в барабан, коли її виконано або прибрано з черги.
   function getWheelCandidates(){
-    return habits.filter(h => h.wheel !== false && !(hideDoneToday && isDoneToday(h.id)));
+    return habits.filter(h => isWheelEligible(h) && wheelQueue.indexOf(h.id) === -1);
   }
   function prefersReducedMotion(){
     try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; }
@@ -657,14 +664,16 @@
     if (!box) return;
     if (!candidates.length){
       idleEl.style.display = 'none';
-      if (empty){ empty.style.display = 'flex'; empty.textContent = 'Немає звичок у барабані — додай звичку нижче або увімкни якусь у списку.'; }
+      if (empty){ empty.style.display = 'flex'; empty.textContent = habits.some(h => isWheelEligible(h) && wheelQueue.indexOf(h.id) !== -1)
+        ? 'Усі звички вже в черзі — виконай їх або очисти чергу, щоб крутити далі.'
+        : 'Немає звичок у барабані — додай звичку нижче або увімкни якусь у списку.'; }
       if (spinBtn) spinBtn.disabled = true;
       return;
     }
     if (empty) empty.style.display = 'none';
     if (spinBtn) spinBtn.disabled = false;
     idleEl.style.display = 'flex';
-    const picked = lastPickedId ? candidates.find(h => h.id === lastPickedId) : null;
+    const picked = lastPickedId ? habits.find(h => h.id === lastPickedId) : null;
     idleEl.classList.toggle('win', !!picked);
     if (picked){
       idleText.innerHTML = reelChipInner(picked);
@@ -685,8 +694,7 @@
 
     if (prefersReducedMotion()){
       isSpinning = false;
-      showWheelResult(candidates[winIdx]);
-      if (spinBtn) spinBtn.disabled = false;
+      showWheelResult(candidates[winIdx]); // render() усередині сам виставляє стан кнопки
       return;
     }
 
@@ -727,8 +735,7 @@
       isSpinning = false;
       animEl.style.display = 'none';
       idleEl.style.display = 'flex';
-      showWheelResult(candidates[winIdx]);
-      if (spinBtn) spinBtn.disabled = false;
+      showWheelResult(candidates[winIdx]); // render() усередині сам виставляє стан кнопки
     }, DURATION + 60);
   }
 
